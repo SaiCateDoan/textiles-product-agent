@@ -9,14 +9,28 @@ class AdapterError(ValueError):
 
 
 class ERPAdapter:
+    def __init__(self):
+        self._client=None
+
+    async def start(self):
+        if self._client is None:
+            self._client=httpx.AsyncClient(timeout=30,trust_env=False)
+
+    async def close(self):
+        client,self._client=self._client,None
+        if client is not None:
+            await client.aclose()
+
     async def request(self,method,path,body=None):
+        if self._client is None:
+            raise AdapterError('业务适配器尚未启动')
+        # Identity belongs to this request, never to the shared client's defaults.
         headers={'X-Internal-Token':INTERNAL_TOKEN}
         if path!='/health': headers['X-Actor-Session']=current_actor()['session_hash']
-        async with httpx.AsyncClient(timeout=30,trust_env=False) as client:
-            try:
-                response=await client.request(method,ERP_URL+path,json=body,headers=headers)
-            except httpx.RequestError as exc:
-                raise AdapterError('ERP/MES服务暂不可用') from exc
+        try:
+            response=await self._client.request(method,ERP_URL+path,json=body,headers=headers)
+        except httpx.RequestError as exc:
+            raise AdapterError('ERP/MES服务暂不可用') from exc
         if response.is_error:
             try:
                 detail=response.json().get('detail','业务请求失败')
@@ -27,6 +41,9 @@ class ERPAdapter:
 
     async def catalog(self):
         return await self.request('GET','/catalog')
+
+    async def dashboard(self):
+        return await self.request('GET','/dashboard')
 
     async def query(self,sql):
         return await self.request('POST','/query',{'sql':sql})

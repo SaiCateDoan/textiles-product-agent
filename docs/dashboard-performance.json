@@ -1,0 +1,177 @@
+{
+  "measurement": "Live local HTTP endpoints, same business database, three samples per role and metric; milliseconds",
+  "before_commit": "c7421d1",
+  "after_recorded_at": "2026-11-06T07:00:50.324585+00:00",
+  "before": {
+    "admin": {
+      "actor_lookup": {
+        "samples_ms": [
+          2.63,
+          3.07,
+          2.3
+        ],
+        "median_ms": 2.63
+      },
+      "scoped_sql": {
+        "samples_ms": [
+          6.19,
+          5.41,
+          5.34
+        ],
+        "median_ms": 5.41
+      },
+      "http_query": {
+        "samples_ms": [
+          472.32,
+          402.06,
+          424.3
+        ],
+        "median_ms": 424.3
+      },
+      "dashboard": {
+        "samples_ms": [
+          3633.44,
+          3784.27,
+          3999.05
+        ],
+        "median_ms": 3784.27
+      }
+    },
+    "sales": {
+      "actor_lookup": {
+        "samples_ms": [
+          2.36,
+          2.71,
+          2.24
+        ],
+        "median_ms": 2.36
+      },
+      "scoped_sql": {
+        "samples_ms": [
+          4.44,
+          4.19,
+          2.73
+        ],
+        "median_ms": 4.19
+      },
+      "http_query": {
+        "samples_ms": [
+          301.19,
+          302.64,
+          298.94
+        ],
+        "median_ms": 301.19
+      },
+      "dashboard": {
+        "samples_ms": [
+          2002.49,
+          2091.99,
+          1941.93
+        ],
+        "median_ms": 2002.49
+      }
+    },
+    "production": {
+      "actor_lookup": {
+        "samples_ms": [
+          2.38,
+          1.86,
+          2.35
+        ],
+        "median_ms": 2.35
+      },
+      "scoped_sql": {
+        "samples_ms": [
+          3.6,
+          2.56,
+          2.78
+        ],
+        "median_ms": 2.78
+      },
+      "http_query": {
+        "samples_ms": [
+          288.24,
+          302.78,
+          313.38
+        ],
+        "median_ms": 302.78
+      },
+      "dashboard": {
+        "samples_ms": [
+          2881.36,
+          2838.88,
+          2855.8
+        ],
+        "median_ms": 2855.8
+      }
+    }
+  },
+  "after": {
+    "admin": {
+      "http_query": {
+        "samples_ms": [
+          28.81,
+          24.98,
+          25.13
+        ],
+        "median_ms": 25.13
+      },
+      "dashboard": {
+        "samples_ms": [
+          26.96,
+          25.63,
+          30.15
+        ],
+        "median_ms": 26.96
+      }
+    },
+    "sales": {
+      "http_query": {
+        "samples_ms": [
+          21.88,
+          25.9,
+          30.55
+        ],
+        "median_ms": 25.9
+      },
+      "dashboard": {
+        "samples_ms": [
+          24.1,
+          22.28,
+          24.63
+        ],
+        "median_ms": 24.1
+      }
+    },
+    "production": {
+      "http_query": {
+        "samples_ms": [
+          22.3,
+          22.69,
+          22.94
+        ],
+        "median_ms": 22.69
+      },
+      "dashboard": {
+        "samples_ms": [
+          23.8,
+          23.36,
+          24.58
+        ],
+        "median_ms": 23.8
+      }
+    }
+  },
+  "profile": {
+    "async_client_construction_ms": [
+      558.81,
+      329.23,
+      335.46
+    ],
+    "ssl_certificate_load_ms": 286
+  },
+  "validation": {
+    "backend_tests_passed": 47,
+    "business_data_modified_by_benchmark": false
+  }
+}

@@ -70,6 +70,11 @@ def catalog(actor=Depends(actor_session)):
     return domain.catalog(actor)
 
 
+@app.get('/dashboard')
+def dashboard(actor=Depends(actor_session)):
+    return domain.dashboard(actor)
+
+
 @app.get('/commands')
 def commands(actor=Depends(actor_session)):
     return {name:{'description':desc,'schema':command_schema(actor,name,model)} for name,(model,desc) in domain.COMMANDS.items() if name in actor['policy']['commands']}

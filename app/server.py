@@ -29,11 +29,15 @@ tasks=set()
 @asynccontextmanager
 async def lifespan(app):
     init_agent()
-    yield
-    for task in tasks:
-        task.cancel()
-    if tasks:
-        await asyncio.gather(*tasks,return_exceptions=True)
+    await erp.start()
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks,return_exceptions=True)
+        await erp.close()
 
 
 app=FastAPI(title='织序 · 工厂智能工作台',lifespan=lifespan,docs_url=None,redoc_url=None,openapi_url=None)
@@ -166,25 +170,7 @@ async def business(operation:str,body:CommandBody):
 
 @app.get('/api/dashboard')
 async def dashboard():
-    actor=auth.current_actor()
-    tables=actor['policy']['tables']
-    cards=[]
-    candidates=[('orders',['quantity','unit_price'],'订单总金额','元','ROUND(COALESCE(SUM(quantity*unit_price),0),2)'),
-                ('orders',['status'],'待交付订单','单',"SUM(CASE WHEN status!='shipped' THEN 1 ELSE 0 END)"),
-                ('work_orders',['status'],'生产中工单','张',"SUM(CASE WHEN status='running' THEN 1 ELSE 0 END)"),
-                ('materials',['stock','safety_stock'],'低库存原料','种','SUM(CASE WHEN stock<safety_stock THEN 1 ELSE 0 END)'),
-                ('production_reports',['good_qty','bad_qty'],'综合良品率','%','ROUND(100.0*SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0),2)'),
-                ('purchases',['status'],'待收货采购单','张',"SUM(CASE WHEN status='ordered' THEN 1 ELSE 0 END)")]
-    for table,columns,label,unit,expr in candidates:
-        if set(columns)<=set(tables.get(table,[])):
-            result=await erp.query(f'SELECT {expr} value FROM {table}')
-            cards.append({'label':label,'unit':unit,'value':result['rows'][0]['value'] or 0})
-    sections=[]
-    for table in ['orders','work_orders','materials','purchases','products']:
-        if table in tables:
-            result=await erp.query(f'SELECT * FROM {table} LIMIT 8')
-            sections.append({'table':table,'data':result})
-    return {'cards':cards,'sections':sections,'as_of':now()}
+    return await erp.dashboard()
 
 
 

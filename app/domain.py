@@ -269,13 +269,25 @@ def catalog(actor=None):
         db.close()
 
 
-def query(sql, actor=None):
-    """SQLite VM authorizer, read-only mode, table allowlist and instruction budget."""
-    if not isinstance(sql,str) or len(sql)>12000:
-        raise BusinessError('查询语句过长或格式错误')
+def _read_connection(actor):
     db=connect()
     if actor: db=projected_db(db,actor)
     db.execute('PRAGMA query_only=ON')
+    return db
+
+
+def query(sql, actor=None):
+    db=_read_connection(actor)
+    try:
+        return _read_query(db,sql)
+    finally:
+        db.close()
+
+
+def _read_query(db,sql):
+    """SQLite VM authorizer, read-only mode, table allowlist and per-query budget."""
+    if not isinstance(sql,str) or len(sql)>12000:
+        raise BusinessError('查询语句过长或格式错误')
     safe_functions={'sum','avg','count','min','max','round','coalesce','ifnull','nullif','abs','strftime','date','datetime','substr','substring','length','lower','upper','trim','printf','julianday','total','cast','like','row_number','rank','dense_rank'}
     def authorize(action,a,b,database,trigger):
         if action in (sqlite3.SQLITE_SELECT,sqlite3.SQLITE_RECURSIVE):
@@ -301,5 +313,30 @@ def query(sql, actor=None):
         return {'columns':columns,'rows':result[:500],'truncated':len(result)>500,'as_of':now(),'source':'ERP/MES SQLite','limit':500}
     except sqlite3.Error as exc:
         raise BusinessError(f'只读查询失败：{exc}') from exc
+
+
+
+def dashboard(actor):
+    """All dashboard panels use one fresh, permission-filtered snapshot."""
+    db=_read_connection(actor)
+    try:
+        tables=actor['policy']['tables']
+        cards=[]
+        candidates=[('orders',['quantity','unit_price'],'订单总金额','元','ROUND(COALESCE(SUM(quantity*unit_price),0),2)'),
+                    ('orders',['status'],'待交付订单','单',"SUM(CASE WHEN status!='shipped' THEN 1 ELSE 0 END)"),
+                    ('work_orders',['status'],'生产中工单','张',"SUM(CASE WHEN status='running' THEN 1 ELSE 0 END)"),
+                    ('materials',['stock','safety_stock'],'低库存原料','种','SUM(CASE WHEN stock<safety_stock THEN 1 ELSE 0 END)'),
+                    ('production_reports',['good_qty','bad_qty'],'综合良品率','%','ROUND(100.0*SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0),2)'),
+                    ('purchases',['status'],'待收货采购单','张',"SUM(CASE WHEN status='ordered' THEN 1 ELSE 0 END)")]
+        for table,columns,label,unit,expr in candidates:
+            if set(columns)<=set(tables.get(table,[])):
+                result=_read_query(db,f'SELECT {expr} value FROM {table}')
+                cards.append({'label':label,'unit':unit,'value':result['rows'][0]['value'] or 0})
+        sections=[]
+        for table in ['orders','work_orders','materials','purchases','products']:
+            if table in tables:
+                result=_read_query(db,f'SELECT * FROM {table} LIMIT 8')
+                sections.append({'table':table,'data':result})
+        return {'cards':cards,'sections':sections,'as_of':now()}
     finally:
         db.close()

@@ -3,6 +3,7 @@ import asyncio
 import json
 import time
 import uuid
+import httpx
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -208,3 +209,95 @@ def test_revocation_stops_inflight_model_result(env,monkeypatch):
             assert not db.execute("SELECT 1 FROM messages WHERE content LIKE '%SHOULD_NOT_PERSIST%'").fetchone()
         finally:db.close()
     finally:auth.session_context.reset(context)
+
+
+@pytest.mark.parametrize('role',list(DEFAULT_ROLES))
+def test_dashboard_uses_one_request_and_one_scoped_snapshot(env,monkeypatch,role):
+    client, internal, login, _=env
+    boot=login(role)
+    calls=[]
+    snapshots=[]
+    original_request=erp.request
+    original_projection=domain.projected_db
+    async def track_request(method,path,body=None):
+        calls.append(path)
+        return await original_request(method,path,body)
+    def track_projection(source,actor):
+        snapshots.append(actor['id'])
+        return original_projection(source,actor)
+    monkeypatch.setattr(erp,'request',track_request)
+    monkeypatch.setattr(domain,'projected_db',track_projection)
+    response=client.get('/api/dashboard')
+    assert response.status_code==200,response.text
+    result=response.json()
+    assert calls==['/dashboard']
+    assert snapshots==[boot['user']['id']]
+    tables=boot['user']['policy']['tables']
+    assert [s['table'] for s in result['sections']]==[t for t in ['orders','work_orders','materials','purchases','products'] if t in tables]
+    for section in result['sections']:
+        assert set(section['data']['columns'])==set(tables[section['table']])
+        if role=='sales' and section['table']=='orders':
+            assert all(row['customer_id']=='C001' for row in section['data']['rows'])
+    cards={c['label']:c['value'] for c in result['cards']}
+    if 'unit_price' not in tables.get('orders',[]): assert '订单总金额' not in cards
+    if role=='sales':
+        expected=domain.query("SELECT SUM(quantity*unit_price) value FROM orders WHERE customer_id='C001'")['rows'][0]['value']
+        assert cards['订单总金额']==expected
+    assert internal.get('/dashboard',headers={'X-Internal-Token':'private-test-token'}).status_code==401
+
+
+def test_dashboard_refreshes_data_without_cross_request_snapshot_cache(env):
+    client, _, login, _=env
+    login('sales')
+    first=client.get('/api/dashboard').json()
+    assert command(client,'create_order',{'customer_id':'C001','product_id':'P001','quantity':10,'due_date':'2027-01-01'}).status_code==200
+    second=client.get('/api/dashboard').json()
+    card=lambda result:next(c['value'] for c in result['cards'] if c['label']=='待交付订单')
+    assert card(second)==card(first)+1
+
+
+def test_pooled_adapter_keeps_identity_per_request_and_closes_client(env,monkeypatch):
+    from app import adapter
+    client, _, login, _=env
+    sessions=[]
+    for role in ['sales','production']:
+        login(role)
+        sessions.append((role,auth.token_digest(client.cookies.get(auth.COOKIE))))
+    constructors=[]
+    received=[]
+    original_client=httpx.AsyncClient
+    async def handler(request):
+        await asyncio.sleep(0)
+        token=request.headers['X-Actor-Session']
+        actor=auth.resolve_session(token)
+        received.append(actor['role_id'])
+        return httpx.Response(200,json={'role':actor['role_id']})
+    def client_factory(**kwargs):
+        instance=original_client(transport=httpx.MockTransport(handler),**kwargs)
+        constructors.append(instance)
+        return instance
+    monkeypatch.setattr(adapter.httpx,'AsyncClient',client_factory)
+    async def scenario():
+        pool=adapter.ERPAdapter()
+        await pool.start()
+        try:
+            async def call(role,token):
+                context=auth.session_context.set(token)
+                try:assert (await pool.catalog())['role']==role
+                finally:auth.session_context.reset(context)
+            await asyncio.gather(*(call(role,token) for _ in range(10) for role,token in sessions))
+            assert len(constructors)==1
+            assert 'X-Actor-Session' not in constructors[0].headers
+            # Reusing the connection must not reuse revoked authorization.
+            with database.transaction('agent') as db:db.execute('DELETE FROM auth_sessions WHERE token_hash=?',(sessions[0][1],))
+            with pytest.raises(HTTPException):await call(*sessions[0])
+            assert len(received)==20
+        finally:await pool.close()
+        assert constructors[0].is_closed
+        await pool.start()
+        try:
+            assert len(constructors)==2
+            await call(*sessions[1])
+        finally:await pool.close()
+        assert constructors[1].is_closed
+    asyncio.run(scenario())
