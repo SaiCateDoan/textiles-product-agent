@@ -1,6 +1,6 @@
 # 织序 · 纺织工厂 Agent Demo
 
-可在 Windows 本机运行的 ERP + MES 一体化系统与真实 DeepSeek Agent。包含后端、网页、SQLite 数据库、模拟数据、私有工具适配层、报表编辑器和可配置技能。原有 `docs/architecture.md`、`docs/implementation-plan.md`、`docs/pain-points.md` 保留为设计参考，实际实现以本文和 [实际架构](docs/demo-architecture.md) 为准。
+可在 Windows 本机运行的 ERP + MES 一体化系统与真实 DeepSeek Agent。包含后端、网页、SQLite 数据库、模拟数据、私有工具适配层、报表编辑器和可配置技能。原有 `docs/架构设计参考方案.md`、`docs/实施与验收参考计划.md`、`docs/业务痛点与解决方案参考.md` 保留为设计参考，实际实现以本文和 [实际架构](docs/系统实际架构与接口说明.md) 为准。
 
 ## 一键启动与关闭
 
@@ -75,7 +75,7 @@ Agent 正在办理业务时，网页关闭操作会提示等待任务结束。�
 
 未授权菜单、字段、业务按钮和 Agent 写工具不可见；后端仍对每次请求校验。销售的客户范围同样作用于 SQL 聚合、关联查询、图表和 CSV。每个账号的聊天与报表独立保存，授权范围变化后旧范围结果隐藏；已有演示聊天和报表迁移至管理员账号。
 
-实现说明与复现步骤见 [权限管理说明](docs/permissions.md)。真实 DeepSeek 岗位验证：`.\.venv\Scripts\python.exe scripts\acceptance_permissions.py`，结果见 [permissions-validation.json](docs/permissions-validation.json)。
+实现说明与复现步骤见 [权限管理说明](docs/登录与岗位权限使用及实现说明.md)。真实 DeepSeek 岗位验证：`.\.venv\Scripts\python.exe scripts\acceptance_permissions.py`，结果见 [岗位权限真实模型验收轨迹.json](docs/岗位权限真实模型验收轨迹.json)。
 
 ## 技能配置
 
@@ -88,7 +88,7 @@ Agent 正在办理业务时，网页关闭操作会提示等待任务结束。�
 
 指令型技能用 `required_tables` 声明所需数据表；未声明依赖的纯指令技能默认仅管理员可见。事务型技能仅对拥有全部步骤业务权限的岗位展示，后端逐步校验数据范围。管理员管理技能，其他岗位仅能使用可用技能。
 
-在网页“技能与流程”新增、编辑、启停和导出。放入新技能 JSON 文件也会自动发现，无需重启。网页配置保存在 `data/agent.sqlite3`，同 ID 的网页配置优先于文件默认值。配置格式及扩展方法见 [实际架构与接口](docs/demo-architecture.md)。
+在网页“技能与流程”新增、编辑、启停和导出。放入新技能 JSON 文件也会自动发现，无需重启。网页配置保存在 `data/agent.sqlite3`，同 ID 的网页配置优先于文件默认值。配置格式及扩展方法见 [实际架构与接口](docs/系统实际架构与接口说明.md)。
 
 ## 配置
 
@@ -128,7 +128,7 @@ npm ci --ignore-scripts
 npm run test:frontend
 ```
 
-真实 AI 验收在 8875/8876 端口启动独立系统，数据库位于 `.runtime/acceptance-*/data/`，不修改演示主库。核验模型工具轨迹及实际数据变化，结果写入 [acceptance-result.json](docs/acceptance-result.json)。首版交付结果见 [验收记录](docs/acceptance-report.md)。后续 Markdown 与聊天图表修复增加了13项前端测试，以及真实浏览器的历史图表恢复、柱状图/饼图切换检查；真实模型的定向验证见 [markdown-charts-validation.json](docs/markdown-charts-validation.json)。
+真实 AI 验收在 8875/8876 端口启动独立系统，数据库位于 `.runtime/acceptance-*/data/`，不修改演示主库。核验模型工具轨迹及实际数据变化，结果写入 [真实模型业务验收轨迹.json](docs/真实模型业务验收轨迹.json)。首版交付结果见 [验收记录](docs/首版演示系统验收记录.md)。后续 Markdown 与聊天图表修复增加了13项前端测试，以及真实浏览器的历史图表恢复、柱状图/饼图切换检查；真实模型的定向验证见 [聊天格式与图表渲染验证轨迹.json](docs/聊天格式与图表渲染验证轨迹.json)。
 
 ## 性能与容量
 
@@ -136,7 +136,7 @@ npm run test:frontend
 
 SQL返回最多500行、行数据约2MB，超过范围标记截断；单行SQLite记录上限1MB，返回列上限200。报表快照上限4MB，模型请求序列化后上限250000字符。聊天历史和日志每页最多200条、约2MB，单条大记录允许独立一页以保证翻页能够推进。
 
-可复现的规模测试与剩余部署边界见 [性能检查记录](docs/performance-review.md)。
+可复现的规模测试与剩余部署边界见 [性能检查记录](docs/项目性能检查与优化记录.md)。问题成因、定位过程与修复机制的逐项讲解见 [性能问题成因与修复详解](docs/性能问题成因与修复详解.md)。
 
 ## 文件与排障
 

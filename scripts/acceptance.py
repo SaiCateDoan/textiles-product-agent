@@ -1,7 +1,7 @@
 """Real DeepSeek -> Agent -> private HTTP adapter -> ERP/MES acceptance.
 
 Runs isolated services and databases. Never mocks the model or modifies the demo DB.
-Writes a reviewable transcript to docs/acceptance-result.json, including model usage.
+Writes a reviewable transcript to docs/真实模型业务验收轨迹.json, including model usage.
 """
 import json
 import os
@@ -16,7 +16,7 @@ import httpx
 
 ROOT=Path(__file__).resolve().parent.parent
 BASE='http://127.0.0.1:8875'
-OUTPUT=ROOT/'docs'/'acceptance-result.json'
+OUTPUT=ROOT/'docs'/'真实模型业务验收轨迹.json'
 evidence={'started_at':datetime.now(timezone(timedelta(hours=8))).isoformat(),'model':'','checks':[],'conversations':[],'status':'running'}
 
 

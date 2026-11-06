@@ -26,7 +26,7 @@ def main():
     env=os.environ.copy()
     env.update(APP_PORT=str(app_port),ERP_PORT=str(erp_port),DEMO_DATA_DIR=str(directory/'data'),DEMO_RUNTIME_DIR=str(directory),PYTHONUTF8='1')
     evidence={'status':'running','checks':[],'conversations':[]}
-    output=ROOT/'docs'/'permissions-validation.json'
+    output=ROOT/'docs'/'岗位权限真实模型验收轨迹.json'
     def save():output.write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
     def check(name,condition):
         evidence['checks'].append({'name':name,'passed':bool(condition)});save()
