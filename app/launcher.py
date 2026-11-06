@@ -14,13 +14,14 @@ from .config import ROOT,APP_PORT,ERP_PORT
 def main():
     runtime=Path(os.getenv('DEMO_RUNTIME_DIR',str(ROOT/'.runtime')))
     runtime.mkdir(parents=True,exist_ok=True)
+    launch_id=os.getenv('DEMO_LAUNCH_ID') or secrets.token_hex(16)
     lock=(runtime/'launcher.lock').open('a+b')
     try:
         if os.name=='nt':
             import msvcrt
-            lock.seek(0)
-            lock.write(b'0')
-            lock.flush()
+            if lock.seek(0,os.SEEK_END)==0:
+                lock.write(b'0')
+                lock.flush()
             lock.seek(0)
             msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
         else:
@@ -29,6 +30,8 @@ def main():
     except OSError:
         print('Demo supervisor is already running.',flush=True)
         return
+    if APP_PORT==ERP_PORT:
+        raise RuntimeError('APP_PORT and ERP_PORT must be different.')
     for port in (APP_PORT,ERP_PORT):
         with socket.socket() as sock:
             try:
@@ -39,6 +42,7 @@ def main():
     shutdown.unlink(missing_ok=True)
     env=os.environ.copy()
     env['DEMO_INTERNAL_TOKEN']=secrets.token_urlsafe(40)
+    env['DEMO_LAUNCH_ID']=launch_id
     env['DEMO_SHUTDOWN_FILE']=str(shutdown)
     env['PYTHONUNBUFFERED']='1'
     children=[]
@@ -51,16 +55,21 @@ def main():
     signal.signal(signal.SIGTERM,stop)
     try:
         for module,port,name in [('app.erp',ERP_PORT,'erp'),('app.server',APP_PORT,'agent')]:
-            log=(runtime/f'{name}.log').open('ab')
+            log=(runtime/f'{name}.log').open('wb')
             logs.append(log)
             child=subprocess.Popen([sys.executable,'-m','uvicorn',module+':app','--host','127.0.0.1','--port',str(port),'--no-access-log'],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
             children.append(child)
-        state={'supervisor_pid':os.getpid(),'children':[p.pid for p in children],'app_port':APP_PORT,'erp_port':ERP_PORT,'workspace':str(ROOT)}
-        (runtime/'state.json').write_text(json.dumps(state),encoding='utf-8')
+        state={'supervisor_pid':os.getpid(),'children':[p.pid for p in children],'app_port':APP_PORT,'erp_port':ERP_PORT,'workspace':str(ROOT),'launch_id':launch_id}
+        state_temp=runtime/f'state-{launch_id}.tmp'
+        state_temp.write_text(json.dumps(state),encoding='utf-8')
+        state_temp.replace(runtime/'state.json')
         print(f'Demo listening at http://127.0.0.1:{APP_PORT}',flush=True)
         while not stopping and not shutdown.exists():
-            if any(p.poll() is not None for p in children):
-                raise RuntimeError('A child service exited. See .runtime/agent.log and erp.log.')
+            for child,name in zip(children,('erp','agent')):
+                if child.poll() is not None:
+                    log_path=runtime/f'{name}.log'
+                    tail='\n'.join(log_path.read_text(encoding='utf-8',errors='replace').splitlines()[-30:])
+                    raise RuntimeError(f'{name} service exited (exit {child.returncode}). Log: {log_path}\n{tail}')
             time.sleep(0.25)
     finally:
         for child in children:

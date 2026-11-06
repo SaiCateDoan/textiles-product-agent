@@ -76,7 +76,7 @@ async def bootstrap():
 
 @app.get('/api/health')
 async def health():
-    return {'status':'ok','service':'textiles-agent','model':MODEL,'erp':await erp.request('GET','/health')}
+    return {'status':'ok','service':'textiles-agent','model':MODEL,'instance_id':os.getenv('DEMO_LAUNCH_ID'),'erp':await erp.request('GET','/health')}
 
 
 @app.get('/api/catalog')
