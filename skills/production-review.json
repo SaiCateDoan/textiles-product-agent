@@ -1,0 +1,12 @@
+{
+  "id": "production-review",
+  "name": "车间质量巡检",
+  "description": "分析工单进度和生产良品率。",
+  "instructions": "查询当前生产工单与报工明细，按日期分析良品率，使用create_report生成折线图。仅分析，不写入。",
+  "required_tables": [
+    "work_orders",
+    "production_reports"
+  ],
+  "inputs": {},
+  "steps": []
+}

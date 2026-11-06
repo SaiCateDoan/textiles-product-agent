@@ -1,5 +1,6 @@
 """Private Python tool adapter. No MCP, no generic URL/HTTP execution tool."""
 import httpx
+from .auth import current_actor
 from .config import ERP_URL, INTERNAL_TOKEN
 
 
@@ -9,9 +10,11 @@ class AdapterError(ValueError):
 
 class ERPAdapter:
     async def request(self,method,path,body=None):
+        headers={'X-Internal-Token':INTERNAL_TOKEN}
+        if path!='/health': headers['X-Actor-Session']=current_actor()['session_hash']
         async with httpx.AsyncClient(timeout=30,trust_env=False) as client:
             try:
-                response=await client.request(method,ERP_URL+path,json=body,headers={'X-Internal-Token':INTERNAL_TOKEN})
+                response=await client.request(method,ERP_URL+path,json=body,headers=headers)
             except httpx.RequestError as exc:
                 raise AdapterError('ERP/MES服务暂不可用') from exc
         if response.is_error:

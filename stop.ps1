@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
-$demoPort = if ($env:APP_PORT) { [int]$env:APP_PORT } else { 8765 }
-$demoUrl = "http://127.0.0.1:$demoPort"
-$bootstrap = Invoke-RestMethod "$demoUrl/api/bootstrap"
-$result = Invoke-RestMethod "$demoUrl/api/shutdown" -Method Post -Headers @{'X-Demo-Token'=$bootstrap.token} -ContentType 'application/json' -Body '{}'
-Write-Host $result.message
+# Local machine owner can stop the supervisor; web shutdown requires an admin login.
+$demoRuntime = if ($env:DEMO_RUNTIME_DIR) { $env:DEMO_RUNTIME_DIR } else { Join-Path $PSScriptRoot '.runtime' }
+$demoState = Join-Path $demoRuntime 'state.json'
+if (-not (Test-Path -LiteralPath $demoState)) { Write-Host 'Demo is not running.'; exit 0 }
+$demoInfo = Get-Content -LiteralPath $demoState -Raw | ConvertFrom-Json
+if ([IO.Path]::GetFullPath($demoInfo.workspace) -ne [IO.Path]::GetFullPath($PSScriptRoot)) { throw 'Runtime belongs to a different workspace.' }
+Set-Content -LiteralPath (Join-Path $demoRuntime 'shutdown.request') -Value 'local-owner-stop' -Encoding UTF8
+Write-Host 'Stopping Demo. Business data and reports are saved.'

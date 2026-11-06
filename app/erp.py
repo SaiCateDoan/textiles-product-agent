@@ -1,3 +1,4 @@
+from .permissions import command_schema
 import hmac
 import sqlite3
 from contextlib import asynccontextmanager
@@ -7,6 +8,10 @@ from pydantic import BaseModel, Field, ValidationError
 from .config import INTERNAL_TOKEN
 from .database import init_erp
 from . import domain
+from .auth import resolve_session
+
+def actor_session(x_actor_session: str = Header(default="")):
+    return resolve_session(x_actor_session)
 
 
 @asynccontextmanager
@@ -61,25 +66,25 @@ def health():
 
 
 @app.get('/catalog')
-def catalog():
-    return domain.catalog()
+def catalog(actor=Depends(actor_session)):
+    return domain.catalog(actor)
 
 
 @app.get('/commands')
-def commands():
-    return {name:{'description':desc,'schema':model.model_json_schema()} for name,(model,desc) in domain.COMMANDS.items()}
+def commands(actor=Depends(actor_session)):
+    return {name:{'description':desc,'schema':command_schema(actor,name,model)} for name,(model,desc) in domain.COMMANDS.items() if name in actor['policy']['commands']}
 
 
 @app.post('/query')
-def query(body: Query):
-    return domain.query(body.sql)
+def query(body: Query,actor=Depends(actor_session)):
+    return domain.query(body.sql,actor)
 
 
 @app.post('/commands/{operation}')
-def command(operation:str,body:Command):
-    return domain.execute(operation,body.params,body.request_id)
+def command(operation:str,body:Command,actor=Depends(actor_session)):
+    return domain.execute(operation,body.params,body.request_id,actor)
 
 
 @app.post('/workflow')
-def workflow(body:Workflow):
-    return domain.execute_workflow(body.steps,body.inputs,body.request_id)
+def workflow(body:Workflow,actor=Depends(actor_session)):
+    return domain.execute_workflow(body.steps,body.inputs,body.request_id,actor)

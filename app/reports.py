@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+from .auth import artifact_owner
 import json
 import math
 from typing import Literal
@@ -22,6 +24,7 @@ class ReportSpec(StrictModel):
 
 
 async def create_report(spec:ReportSpec):
+    owner, tag = artifact_owner()
     if spec.sql:
         data=await erp.query(spec.sql)
     else:
@@ -48,15 +51,16 @@ async def create_report(spec:ReportSpec):
     identity=uid('RPT')
     body=spec.model_dump(exclude={'rows','sql'})
     stamp=now()
+    if artifact_owner() != (owner,tag): raise HTTPException(401,'会话已失效')
     with transaction('agent') as db:
-        db.execute('INSERT INTO reports VALUES(?,?,?,?,?,?,?)',(identity,spec.title,spec.chart_type,json.dumps(body,ensure_ascii=False),json.dumps(data,ensure_ascii=False),spec.sql,stamp))
+        db.execute('INSERT INTO reports(id,title,chart_type,spec,data,sql,created_at,owner_id,access_tag) VALUES(?,?,?,?,?,?,?,?,?)',(identity,spec.title,spec.chart_type,json.dumps(body,ensure_ascii=False),json.dumps(data,ensure_ascii=False),spec.sql,stamp,owner,tag))
     return {'id':identity,**body,'data':data,'sql':spec.sql,'created_at':stamp}
 
 
 def list_reports():
     db=connect('agent')
     try:
-        return rows(db,'SELECT id,title,chart_type,created_at FROM reports ORDER BY created_at DESC LIMIT 100')
+        return rows(db,'SELECT id,title,chart_type,created_at FROM reports WHERE owner_id=? AND access_tag=? ORDER BY created_at DESC LIMIT 100',artifact_owner())
     finally:
         db.close()
 
@@ -64,9 +68,9 @@ def list_reports():
 def get_report(identity):
     db=connect('agent')
     try:
-        row=db.execute('SELECT * FROM reports WHERE id=?',(identity,)).fetchone()
+        row=db.execute('SELECT * FROM reports WHERE id=? AND owner_id=? AND access_tag=?',(identity,*artifact_owner())).fetchone()
         if not row:
-            raise ValueError('报表不存在')
+            raise HTTPException(404,'报表不存在')
         return {'id':row['id'],**json.loads(row['spec']),'data':json.loads(row['data']),'sql':row['sql'],'created_at':row['created_at']}
     finally:
         db.close()

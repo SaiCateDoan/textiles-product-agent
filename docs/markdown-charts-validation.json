@@ -1,0 +1,948 @@
+{
+  "status": "passed",
+  "model": "deepseek-flash",
+  "session_id": "CHAT-2684270B86",
+  "run_id": "RUN-D3422A8944",
+  "prompt": "图表展示验证：请按产品统计真实订单金额，分别生成一张柱状图和一张饼图。最后用Markdown二级标题、加粗和两条列表简要解释结果，不要输出Markdown数据表。不执行业务写操作。",
+  "checks": [
+    "real AI created bar and pie reports",
+    "Markdown heading and bold returned",
+    "report snapshots match persisted data",
+    "no business mutations"
+  ],
+  "events": [
+    {
+      "id": 34,
+      "run_id": "RUN-D3422A8944",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第1轮"
+      },
+      "created_at": "2026-11-06T11:43:37+08:00"
+    },
+    {
+      "id": 35,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_start",
+      "payload": {
+        "name": "get_catalog",
+        "arguments": {},
+        "call_id": "call_00_wxUA1qQxlpkPq0Yf0zpU4799"
+      },
+      "created_at": "2026-11-06T11:43:39+08:00"
+    },
+    {
+      "id": 36,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_result",
+      "payload": {
+        "name": "get_catalog",
+        "call_id": "call_00_wxUA1qQxlpkPq0Yf0zpU4799",
+        "ok": true,
+        "result": [
+          {
+            "table": "customers",
+            "description": "客户",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "contact",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "suppliers",
+            "description": "供应商",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "materials",
+            "description": "原料库存，stock/safety_stock单位见unit，unit_cost为元/单位",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "unit",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "safety_stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "unit_cost",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "supplier_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "products",
+            "description": "成品库存，stock单位为米，price元/米",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "spec",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "unit",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "price",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "bom",
+            "description": "每生产1米所需原料用量，关联product_id和material_id",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "material_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 2
+              },
+              {
+                "cid": 2,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "machines",
+            "description": "设备：available可排产，maintenance维护中；实际忙碌状态查running工单",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "workshop",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "orders",
+            "description": "销售订单，一单一种产品；quantity/shipped为米；收入=quantity*unit_price，不代表回款",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "customer_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "unit_price",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "due_date",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 7,
+                "name": "shipped",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 8,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "work_orders",
+            "description": "生产工单，quantity为目标米数，good_qty/bad_qty为累计报工；planned/running/completed",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "machine_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "good_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "bad_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 7,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 8,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "production_reports",
+            "description": "报工质检明细，good_qty/bad_qty为本次米数；良品率=SUM(good_qty)/SUM(good_qty+bad_qty)",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "work_order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "good_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "bad_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "defect",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "purchases",
+            "description": "原料采购单，ordered待收货/received已入库",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "material_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "supplier_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "unit_cost",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "stock_movements",
+            "description": "库存流水，quantity正为入库，负为出库；期初前历史不用于重建库存",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "INTEGER",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "item_type",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "item_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "reason",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "reference_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "shipments",
+            "description": "发货记录，quantity单位米",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "audit",
+            "description": "业务操作审计（含输入与结果）",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "INTEGER",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "operation",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "request_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "payload",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "result",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          }
+        ]
+      },
+      "created_at": "2026-11-06T11:43:40+08:00"
+    },
+    {
+      "id": 37,
+      "run_id": "RUN-D3422A8944",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第2轮"
+      },
+      "created_at": "2026-11-06T11:43:40+08:00"
+    },
+    {
+      "id": 38,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT p.id AS product_id, p.name AS product_name, COUNT(o.id) AS order_count, SUM(o.quantity) AS total_qty, ROUND(SUM(o.quantity*o.unit_price),2) AS amount FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id, p.name ORDER BY amount DESC"
+        },
+        "call_id": "call_00_ZegSoN8jk3cPd3zeLBYv7160"
+      },
+      "created_at": "2026-11-06T11:43:42+08:00"
+    },
+    {
+      "id": 39,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_00_ZegSoN8jk3cPd3zeLBYv7160",
+        "ok": true,
+        "result": {
+          "columns": [
+            "product_id",
+            "product_name",
+            "order_count",
+            "total_qty",
+            "amount"
+          ],
+          "rows": [
+            {
+              "product_id": "P003",
+              "product_name": "靛蓝弹力牛仔",
+              "order_count": 6,
+              "total_qty": 11100.0,
+              "amount": 466200.0
+            },
+            {
+              "product_id": "P002",
+              "product_name": "再生涤棉斜纹",
+              "order_count": 6,
+              "total_qty": 10500.0,
+              "amount": 336000.0
+            },
+            {
+              "product_id": "P001",
+              "product_name": "云感纯棉府绸",
+              "order_count": 6,
+              "total_qty": 9900.0,
+              "amount": 277200.0
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:43:43+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:43:43+08:00"
+    },
+    {
+      "id": 40,
+      "run_id": "RUN-D3422A8944",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第3轮"
+      },
+      "created_at": "2026-11-06T11:43:43+08:00"
+    },
+    {
+      "id": 41,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_start",
+      "payload": {
+        "name": "create_report",
+        "arguments": {
+          "title": "按产品统计真实订单金额（柱状图）",
+          "chart_type": "bar",
+          "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS amount FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id, p.name ORDER BY amount DESC",
+          "x": "product_name",
+          "y": [
+            "amount"
+          ],
+          "description": "订单金额=quantity*unit_price，按产品汇总，单位元，不代表回款。"
+        },
+        "call_id": "call_00_SJTGsmDkyhJnCkKfHdc03523"
+      },
+      "created_at": "2026-11-06T11:43:46+08:00"
+    },
+    {
+      "id": 42,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_result",
+      "payload": {
+        "name": "create_report",
+        "call_id": "call_00_SJTGsmDkyhJnCkKfHdc03523",
+        "ok": true,
+        "result": {
+          "id": "RPT-077A55B08C",
+          "title": "按产品统计真实订单金额（柱状图）",
+          "chart_type": "bar",
+          "x": "product_name",
+          "y": [
+            "amount"
+          ],
+          "group": "",
+          "description": "订单金额=quantity*unit_price，按产品汇总，单位元，不代表回款。",
+          "data": {
+            "columns": [
+              "product_name",
+              "amount"
+            ],
+            "rows": [
+              {
+                "product_name": "靛蓝弹力牛仔",
+                "amount": 466200.0
+              },
+              {
+                "product_name": "再生涤棉斜纹",
+                "amount": 336000.0
+              },
+              {
+                "product_name": "云感纯棉府绸",
+                "amount": 277200.0
+              }
+            ],
+            "truncated": false,
+            "as_of": "2026-11-06T11:43:46+08:00",
+            "source": "ERP/MES SQLite",
+            "limit": 500
+          },
+          "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS amount FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id, p.name ORDER BY amount DESC",
+          "created_at": "2026-11-06T11:43:46+08:00"
+        }
+      },
+      "created_at": "2026-11-06T11:43:46+08:00"
+    },
+    {
+      "id": 43,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_start",
+      "payload": {
+        "name": "create_report",
+        "arguments": {
+          "title": "按产品统计真实订单金额（饼图）",
+          "chart_type": "pie",
+          "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS amount FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id, p.name ORDER BY amount DESC",
+          "x": "product_name",
+          "y": [
+            "amount"
+          ],
+          "description": "各产品订单金额占比，单位元。"
+        },
+        "call_id": "call_01_R4JLDT56fUdaQi01AjeX7282"
+      },
+      "created_at": "2026-11-06T11:43:46+08:00"
+    },
+    {
+      "id": 44,
+      "run_id": "RUN-D3422A8944",
+      "kind": "tool_result",
+      "payload": {
+        "name": "create_report",
+        "call_id": "call_01_R4JLDT56fUdaQi01AjeX7282",
+        "ok": true,
+        "result": {
+          "id": "RPT-67F97DBD09",
+          "title": "按产品统计真实订单金额（饼图）",
+          "chart_type": "pie",
+          "x": "product_name",
+          "y": [
+            "amount"
+          ],
+          "group": "",
+          "description": "各产品订单金额占比，单位元。",
+          "data": {
+            "columns": [
+              "product_name",
+              "amount"
+            ],
+            "rows": [
+              {
+                "product_name": "靛蓝弹力牛仔",
+                "amount": 466200.0
+              },
+              {
+                "product_name": "再生涤棉斜纹",
+                "amount": 336000.0
+              },
+              {
+                "product_name": "云感纯棉府绸",
+                "amount": 277200.0
+              }
+            ],
+            "truncated": false,
+            "as_of": "2026-11-06T11:43:46+08:00",
+            "source": "ERP/MES SQLite",
+            "limit": 500
+          },
+          "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS amount FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id, p.name ORDER BY amount DESC",
+          "created_at": "2026-11-06T11:43:46+08:00"
+        }
+      },
+      "created_at": "2026-11-06T11:43:46+08:00"
+    },
+    {
+      "id": 45,
+      "run_id": "RUN-D3422A8944",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第4轮"
+      },
+      "created_at": "2026-11-06T11:43:46+08:00"
+    },
+    {
+      "id": 46,
+      "run_id": "RUN-D3422A8944",
+      "kind": "answer",
+      "payload": {
+        "content": "## 按产品订单金额分析\n\n两张图已生成：柱状图 **RPT-077A55B08C**，饼图 **RPT-67F97DBD09**。\n\n- **靛蓝弹力牛仔（P003）** 订单金额最高，为 **466,200 元**，共 6 张订单、11,100 米，约占三款产品合计金额的 43%。\n- **再生涤棉斜纹（P002）** 为 **336,000 元**，**云感纯棉府绸（P001）** 为 **277,200 元**；三款产品合计 **1,079,400 元**，订单数均为 6 张，金额差异主要来自单价与米数。\n\n说明：金额按 `quantity × unit_price` 汇总，属于订单金额，不等于实收收入或回款；本次未执行任何业务写操作。"
+      },
+      "created_at": "2026-11-06T11:43:50+08:00"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 21236,
+    "completion_tokens": 709,
+    "model": "deepseek-flash",
+    "model_calls": 4
+  }
+}

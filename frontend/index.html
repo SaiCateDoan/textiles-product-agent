@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>织序 · 工厂智能工作台</title><link rel="stylesheet" href="/static/styles.css"><script src="/static/vendor/echarts.min.js" defer></script><script src="/static/app.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>织序 · 工厂智能工作台</title><link rel="stylesheet" href="/static/styles.css?v=access-1"><script src="/static/vendor/echarts.min.js" defer></script><script src="/static/vendor/marked.umd.js" defer></script><script src="/static/vendor/purify.min.js" defer></script><script src="/static/renderers.js?v=access-1" defer></script><script src="/static/app.js?v=access-1" defer></script></head>
 <body>
-<aside class="sidebar">
+<section id="login-screen" class="login-screen"><div class="login-brand"><span class="brand-mark">织</span><h1>织序</h1><p>工厂智能工作台</p><div class="login-story">连接岗位与业务<br>让每一步协作都有章可循</div></div><form id="login-form" class="login-card"><span class="eyebrow">WELCOME BACK</span><h2>登录工作空间</h2><p class="subtitle">使用你的工作账号，进入专属岗位工作台。</p><div class="field"><label for="login-username">账号</label><input id="login-username" autocomplete="username" required maxlength="80"></div><div class="field"><label for="login-password">密码</label><input id="login-password" type="password" autocomplete="current-password" required maxlength="128"></div><button class="primary" type="submit">登录工作台 →</button><div id="login-error" role="alert"></div><p class="note">首次启动的演示账号见项目目录 data/demo-accounts.json。<br>账号由系统管理员统一管理。</p></form></section>
+<aside class="sidebar" data-shell hidden>
   <a class="brand" href="#overview"><span class="brand-mark">织</span><span>织序<small>TEXTILE INTELLIGENCE</small></span></a>
   <div class="workspace-label">云织工厂 <span>DEMO</span></div>
   <nav aria-label="主导航">
@@ -11,12 +12,13 @@
     <button data-page="business"><span>▦</span>生产与经营</button>
     <button data-page="reports"><span>◷</span>报表工作室</button>
     <button data-page="skills"><span>⌘</span>技能与流程</button>
+    <button data-page="admin" hidden><span>⚙</span>账号与权限</button>
   </nav>
   <div class="sidebar-note"><span class="live-dot"></span> 一套数据，贯通产销<p>从订单到车间<br>让业务与智能协同运转</p></div>
-  <div class="sidebar-bottom"><span class="avatar">云</span><div>演示管理员<small>本地演示环境</small></div><button id="shutdown" class="power" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button></div>
+  <div class="sidebar-bottom"><span class="avatar">云</span><div id="identity"></div><button id="shutdown" class="power" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button></div>
 </aside>
-<main>
-  <header class="topbar"><div class="breadcrumb">工作空间 <span>/</span> <strong id="page-title">经营总览</strong></div><div class="topbar-right"><span id="connection" class="connection">连接中</span><span id="today"></span><button id="shutdown-top" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button><span class="mini-avatar">YZ</span></div></header>
+<main data-shell hidden>
+  <header class="topbar"><div class="breadcrumb">工作空间 <span>/</span> <strong id="page-title">经营总览</strong></div><div class="topbar-right"><span id="connection" class="connection">连接中</span><span id="today"></span><button id="shutdown-top" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button><button id="logout">退出登录</button></div></header>
   <div id="page" class="page"><div class="loading">正在加载工厂数据…</div></div>
 </main>
 <dialog id="modal"><div id="modal-body"></div></dialog>

@@ -12,6 +12,12 @@ def isolated(tmp_path,monkeypatch):
     monkeypatch.setattr(database,'DATA',tmp_path)
     database.init_erp()
     database.init_agent()
+    from app import auth
+    account=json.loads((tmp_path/'demo-accounts.json').read_text(encoding='utf-8'))[0]
+    token=auth.login(account['username'],account['password'],'test')
+    context=auth.session_context.set(auth.token_digest(token))
+    yield
+    auth.session_context.reset(context)
 
 
 def execute(name,**params):
@@ -152,7 +158,7 @@ def test_skill_configuration_is_enforced():
 
 def test_restart_repairs_unfinished_tool_call_history():
     with database.transaction('agent') as db:
-        db.execute('INSERT INTO sessions VALUES(?,?,?)',('test-session','测试',database.now()))
+        db.execute('INSERT INTO sessions(id,title,created_at) VALUES(?,?,?)',('test-session','测试',database.now()))
         db.execute("INSERT INTO runs(id,session_id,status,created_at) VALUES('test-run','test-session','running',?)",(database.now(),))
         message={'role':'assistant','content':None,'tool_calls':[{'id':'call-unknown','type':'function','function':{'name':'create_order','arguments':'{}'}}]}
         db.execute('INSERT INTO messages(session_id,role,content,created_at) VALUES(?,?,?,?)',('test-session','assistant',json.dumps(message),database.now()))

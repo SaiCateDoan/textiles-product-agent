@@ -1,3 +1,4 @@
+from .auth import current_actor, require_admin
 import json
 import re
 from typing import Literal
@@ -28,6 +29,7 @@ class Skill(StrictModel):
     enabled: bool = True
     instructions: str = Field(min_length=1,max_length=8000)
     inputs: dict[str,SkillInput] = Field(default_factory=dict,max_length=20)
+    required_tables: list[str] = Field(default_factory=list,max_length=20)
     steps: list[SkillStep] = Field(default_factory=list,max_length=12)
 
     @model_validator(mode='after')
@@ -60,7 +62,7 @@ class Skill(StrictModel):
         return self
 
 
-def list_skills():
+def list_skills(unfiltered=False):
     found={}
     for path in sorted((ROOT/'skills').glob('*.json')):
         body=Skill.model_validate_json(path.read_text(encoding='utf-8')).model_dump()
@@ -72,10 +74,17 @@ def list_skills():
             found[body['id']]=body
     finally:
         db.close()
-    return list(found.values())
+    if unfiltered: return list(found.values())
+    actor=current_actor()
+    def allowed(skill):
+        if actor['role_id']=='admin': return True
+        required=skill['required_tables']
+        return skill['enabled'] and bool(required or skill['steps']) and set(required)<=set(actor['policy']['tables']) and all(s['operation'] in actor['policy']['commands'] for s in skill['steps'])
+    return [skill for skill in found.values() if allowed(skill)]
 
 
 def save_skill(body):
+    require_admin()
     value=Skill.model_validate(body).model_dump()
     with transaction('agent') as db:
         db.execute('INSERT INTO skill_config VALUES(?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body',(value['id'],json.dumps(value,ensure_ascii=False)))

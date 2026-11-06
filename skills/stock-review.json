@@ -1,0 +1,11 @@
+{
+  "id": "stock-review",
+  "name": "库存巡检",
+  "description": "检查安全库存和补料需求，生成库存关注图表。",
+  "instructions": "读取数据目录，查询原料安全库存缺口，使用create_report生成柱状图和补料建议。仅分析，不执行采购。",
+  "required_tables": [
+    "materials"
+  ],
+  "inputs": {},
+  "steps": []
+}

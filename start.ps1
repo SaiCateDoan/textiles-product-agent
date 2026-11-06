@@ -1,4 +1,4 @@
-param([switch]$NoBrowser)
+﻿param([switch]$NoBrowser)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 if (-not $env:DEEPSEEK_API_KEY) {
@@ -83,5 +83,7 @@ if (-not (Test-DemoReady)) {
     }
 }
 Write-Host "Demo ready: $demoUrl"
+$demoData = if ($env:DEMO_DATA_DIR) { $env:DEMO_DATA_DIR } else { Join-Path $PSScriptRoot 'data' }
+Write-Host ("Login accounts: " + (Join-Path $demoData 'demo-accounts.json'))
 if (-not $env:DEEPSEEK_API_KEY) { Write-Warning 'DEEPSEEK_API_KEY missing. Business UI works; configure it and restart for AI chat.' }
 if (-not $NoBrowser) { Start-Process $demoUrl }

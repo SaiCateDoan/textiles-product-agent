@@ -1,0 +1,12 @@
+{
+  "id": "sales-review",
+  "name": "订单交付分析",
+  "description": "跟进负责范围内的销售订单与交期。",
+  "instructions": "读取当前可用目录，检查未交付订单，按产品聚合订单数量并使用create_report绘制饼图。仅分析，不写入。",
+  "required_tables": [
+    "orders",
+    "products"
+  ],
+  "inputs": {},
+  "steps": []
+}

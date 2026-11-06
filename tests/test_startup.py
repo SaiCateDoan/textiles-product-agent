@@ -1,4 +1,5 @@
 """Real Windows launcher regressions; isolated ports/data, no model API calls."""
+import json
 import os
 import socket
 import subprocess
@@ -44,6 +45,8 @@ def demo(tmp_path):
         return process.returncode,path.read_text(encoding='utf-8',errors='replace')
 
     def stop():
+        account=json.loads((data/'demo-accounts.json').read_text(encoding='utf-8'))[0]
+        client.post('/api/auth/login',json={k:account[k] for k in ('username','password')},headers={'X-Demo-Login':'1'}).raise_for_status()
         bootstrap=client.get('/api/bootstrap').json()
         response=client.post('/api/shutdown',headers={'X-Demo-Token':bootstrap['token']})
         response.raise_for_status()

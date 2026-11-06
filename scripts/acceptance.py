@@ -55,6 +55,8 @@ def main():
             try:
                 health=client.get('/api/health')
                 if health.status_code==200:
+                    account=json.loads((runtime/'data'/'demo-accounts.json').read_text(encoding='utf-8'))[0]
+                    client.post('/api/auth/login',json={k:account[k] for k in ('username','password')},headers={'X-Demo-Login':'1'}).raise_for_status()
                     bootstrap=client.get('/api/bootstrap').json()
                     client.headers['X-Demo-Token']=bootstrap['token']
                     evidence['model']=bootstrap['model']
@@ -96,7 +98,8 @@ def main():
         supervisor=launch()
         check('ERP rejects requests without private adapter token',httpx.get('http://127.0.0.1:8876/health',trust_env=False).status_code==401)
         check('No MCP endpoint',client.get('/mcp').status_code==404)
-        check('Mutation rejects missing browser token',httpx.post(BASE+'/api/query',json={'sql':'SELECT 1'},trust_env=False).status_code==403)
+        check('Mutation rejects missing login',httpx.post(BASE+'/api/query',json={'sql':'SELECT 1'},trust_env=False).status_code==401)
+        check('Mutation rejects missing browser token',client.post('/api/query',json={'sql':'SELECT 1'},headers={'X-Demo-Token':''}).status_code==403)
         check('Mutation rejects cross-origin requests',client.post('/api/query',json={'sql':'SELECT 1'},headers={'Origin':'https://evil.example'}).status_code==403)
         check('Frontend static assets served',all(client.get(path).status_code==200 for path in ['/','/static/app.js','/static/styles.css','/static/vendor/echarts.min.js']))
         check('Integrated seeded business data',scalar('SELECT COUNT(*) FROM orders')==18 and scalar('SELECT COUNT(*) FROM materials')==4)

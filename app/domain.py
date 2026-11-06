@@ -1,3 +1,4 @@
+from .permissions import require_command, check_target, project_result, projected_db
 """ERP/MES invariants live here, never in model prompts or the adapter."""
 import hashlib
 import json
@@ -180,17 +181,22 @@ def fingerprint(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
 
 
-def execute(operation, params, request_id):
-    fp=fingerprint([operation,params])
+def execute(operation, params, request_id, actor=None):
+    if actor:
+        require_command(actor, operation)
+        request_id = actor["id"] + ":" + request_id
+    fp=fingerprint([operation,params,actor["access_tag"] if actor else None])
     with transaction() as db:
+        if actor: check_target(db, actor, operation, params)
         cached=db.execute('SELECT * FROM idempotency WHERE request_id=?',(request_id,)).fetchone()
         if cached:
             if cached['fingerprint']!=fp:
                 raise BusinessError('相同幂等键对应不同请求')
             return json.loads(cached['result'])
         result=dispatch(db,operation,params)
+        if actor: result=project_result(actor,result,operation)
         encoded=json.dumps(result,ensure_ascii=False)
-        db.execute('INSERT INTO audit(operation,request_id,payload,result,created_at) VALUES(?,?,?,?,?)',(operation,request_id,json.dumps(params,ensure_ascii=False),encoded,now()))
+        db.execute('INSERT INTO audit(operation,request_id,payload,result,created_at,actor_id) VALUES(?,?,?,?,?,?)',(operation,request_id,json.dumps(params,ensure_ascii=False),encoded,now(),actor['id'] if actor else 'internal'))
         db.execute('INSERT INTO idempotency VALUES(?,?,?)',(request_id,fp,encoded))
         return result
 
@@ -212,10 +218,13 @@ def resolve(value, inputs, outputs):
     return value
 
 
-def execute_workflow(steps, inputs, request_id):
+def execute_workflow(steps, inputs, request_id, actor=None):
+    if actor:
+        for step in steps: require_command(actor, step["operation"])
+        request_id = actor["id"] + ":" + request_id
     if not 1<=len(steps)<=12:
         raise BusinessError('流程必须包含1至12步')
-    fp=fingerprint([steps,inputs])
+    fp=fingerprint([steps,inputs,actor["access_tag"] if actor else None])
     with transaction() as db:
         cached=db.execute('SELECT * FROM idempotency WHERE request_id=?',(request_id,)).fetchone()
         if cached:
@@ -227,9 +236,11 @@ def execute_workflow(steps, inputs, request_id):
             if not step.get('id') or step['id'] in outputs:
                 raise BusinessError('流程步骤ID为空或重复')
             params=resolve(step['params'],inputs,outputs)
+            if actor: check_target(db,actor,step['operation'],params)
             result=dispatch(db,step['operation'],params)
+            if actor: result=project_result(actor,result,step['operation'])
             outputs[step['id']]=result
-            db.execute('INSERT INTO audit(operation,request_id,payload,result,created_at) VALUES(?,?,?,?,?)',(step['operation'],request_id,json.dumps(params,ensure_ascii=False),json.dumps(result,ensure_ascii=False),now()))
+            db.execute('INSERT INTO audit(operation,request_id,payload,result,created_at,actor_id) VALUES(?,?,?,?,?,?)',(step['operation'],request_id,json.dumps(params,ensure_ascii=False),json.dumps(result,ensure_ascii=False),now(),actor['id'] if actor else 'internal'))
         result={'steps':outputs,'atomic':True}
         db.execute('INSERT INTO idempotency VALUES(?,?,?)',(request_id,fp,json.dumps(result,ensure_ascii=False)))
         return result
@@ -248,19 +259,22 @@ CATALOG = {
 }
 
 
-def catalog():
+def catalog(actor=None):
     db=connect()
     try:
-        return [{'table':name,'description':desc,'columns':rows(db,f'PRAGMA table_info({name})')} for name,desc in CATALOG.items()]
+        return [{'table':name,'description':desc if not actor or actor['role_id']=='admin' else name,
+                 'columns':[c for c in rows(db,f'PRAGMA table_info({name})') if not actor or c['name'] in actor['policy']['tables'][name]]}
+                for name,desc in CATALOG.items() if not actor or name in actor['policy']['tables']]
     finally:
         db.close()
 
 
-def query(sql):
+def query(sql, actor=None):
     """SQLite VM authorizer, read-only mode, table allowlist and instruction budget."""
     if not isinstance(sql,str) or len(sql)>12000:
         raise BusinessError('查询语句过长或格式错误')
     db=connect()
+    if actor: db=projected_db(db,actor)
     db.execute('PRAGMA query_only=ON')
     safe_functions={'sum','avg','count','min','max','round','coalesce','ifnull','nullif','abs','strftime','date','datetime','substr','substring','length','lower','upper','trim','printf','julianday','total','cast','like','row_number','rank','dense_rank'}
     def authorize(action,a,b,database,trigger):

@@ -53,6 +53,8 @@ def init_erp():
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT,operation TEXT NOT NULL,request_id TEXT NOT NULL,payload TEXT NOT NULL,result TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS idempotency(request_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,result TEXT NOT NULL);
     ''')
+    if 'actor_id' not in {r['name'] for r in db.execute('PRAGMA table_info(audit)')}:
+        db.execute("ALTER TABLE audit ADD COLUMN actor_id TEXT NOT NULL DEFAULT 'legacy'")
     if not db.execute('SELECT 1 FROM products').fetchone():
         db.executemany('INSERT INTO customers VALUES(?,?,?)', [('C001','杭州云织服饰','林经理'),('C002','苏州远山家纺','陈经理'),('C003','宁波海风贸易','王经理')])
         db.executemany('INSERT INTO suppliers VALUES(?,?)', [('S001','新源纱业'),('S002','蓝禾染化')])
@@ -107,3 +109,6 @@ def init_agent():
         db.execute('INSERT INTO messages(session_id,role,content,created_at) VALUES(?,?,?,?)',(session['session_id'],'assistant',json.dumps(body,ensure_ascii=False),now()))
     db.commit()
     db.close()
+
+    from .auth import init_auth
+    init_auth()
