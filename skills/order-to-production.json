@@ -1,0 +1,20 @@
+{
+  "id": "order-to-production",
+  "name": "接单即排产",
+  "description": "一次完成销售订单创建、生产工单排产和下达领料；任一步失败全部回滚。",
+  "version": "1.0.0",
+  "enabled": true,
+  "instructions": "用户明确要求接单并开工时使用此流程。先查询客户、产品、BOM库存与空闲设备，核实数量及交期；调用run_skill后报告销售单和工单编号。缺料时先告知用户，不擅自采购。",
+  "inputs": {
+    "customer_id": {"type":"string","description":"客户ID"},
+    "product_id": {"type":"string","description":"产品ID"},
+    "quantity": {"type":"number","description":"订单米数"},
+    "due_date": {"type":"string","description":"交期YYYY-MM-DD"},
+    "machine_id": {"type":"string","description":"空闲设备ID"}
+  },
+  "steps": [
+    {"id":"order","operation":"create_order","params":{"customer_id":"$input.customer_id","product_id":"$input.product_id","quantity":"$input.quantity","due_date":"$input.due_date"}},
+    {"id":"work","operation":"plan_order","params":{"order_id":"$steps.order.id","machine_id":"$input.machine_id"}},
+    {"id":"release","operation":"release_work_order","params":{"work_order_id":"$steps.work.id"}}
+  ]
+}

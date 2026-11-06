@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>织序 · 工厂智能工作台</title><link rel="stylesheet" href="/static/styles.css"><script src="/static/vendor/echarts.min.js" defer></script><script src="/static/app.js" defer></script></head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="#overview"><span class="brand-mark">织</span><span>织序<small>TEXTILE INTELLIGENCE</small></span></a>
+  <div class="workspace-label">云织工厂 <span>DEMO</span></div>
+  <nav aria-label="主导航">
+    <button data-page="overview" class="active"><span>◫</span>经营总览</button>
+    <button data-page="agent"><span>✳</span>智能助手 <i>AI</i></button>
+    <button data-page="business"><span>▦</span>生产与经营</button>
+    <button data-page="reports"><span>◷</span>报表工作室</button>
+    <button data-page="skills"><span>⌘</span>技能与流程</button>
+  </nav>
+  <div class="sidebar-note"><span class="live-dot"></span> 一套数据，贯通产销<p>从订单到车间<br>让业务与智能协同运转</p></div>
+  <div class="sidebar-bottom"><span class="avatar">云</span><div>演示管理员<small>本地演示环境</small></div><button id="shutdown" class="power" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button></div>
+</aside>
+<main>
+  <header class="topbar"><div class="breadcrumb">工作空间 <span>/</span> <strong id="page-title">经营总览</strong></div><div class="topbar-right"><span id="connection" class="connection">连接中</span><span id="today"></span><button id="shutdown-top" title="关闭整个Demo" aria-label="关闭整个Demo">⏻</button><span class="mini-avatar">YZ</span></div></header>
+  <div id="page" class="page"><div class="loading">正在加载工厂数据…</div></div>
+</main>
+<dialog id="modal"><div id="modal-body"></div></dialog>
+<div id="toast" role="status"></div>
+</body></html>

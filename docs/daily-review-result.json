@@ -1,0 +1,1784 @@
+{
+  "prompt": "请读取并使用daily-review生产经营晨报技能。检查未完成订单交期、低于安全库存的原料、在制工单和最近30天质量，保存异常明细表及产品订单金额柱状图。不要执行任何写业务操作。",
+  "session_id": "CHAT-BC5353A64E",
+  "run_id": "RUN-AB35CF4772",
+  "events": [
+    {
+      "id": 1,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第1轮"
+      },
+      "created_at": "2026-11-06T11:08:51+08:00"
+    },
+    {
+      "id": 2,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "read_skill",
+        "arguments": {
+          "skill_id": "daily-review"
+        },
+        "call_id": "call_00_Ly1MtWNmhaojoqr9nA092545"
+      },
+      "created_at": "2026-11-06T11:08:53+08:00"
+    },
+    {
+      "id": 3,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "read_skill",
+        "call_id": "call_00_Ly1MtWNmhaojoqr9nA092545",
+        "ok": true,
+        "result": {
+          "id": "daily-review",
+          "name": "生产经营晨报",
+          "description": "跨ERP/MES检查交期、缺料、在制品和质量，输出可追溯的明细表与图表。",
+          "version": "1.0.0",
+          "enabled": true,
+          "instructions": "先使用get_catalog了解字段。分开查询未完成订单、低于安全库存的原料、正在执行的工单以及最近30天报工良品率，避免一对多连接重复计数。使用中国时区当前日期判断逾期；注明订单金额不等于回款。用create_report至少保存一个异常明细table和一个按产品聚合的bar图。给出基于证据的行动建议，不执行任何写业务操作。",
+          "inputs": {},
+          "steps": []
+        }
+      },
+      "created_at": "2026-11-06T11:08:53+08:00"
+    },
+    {
+      "id": 4,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "get_catalog",
+        "arguments": {},
+        "call_id": "call_01_MlIj1yq1valGv4QJjTEG1239"
+      },
+      "created_at": "2026-11-06T11:08:53+08:00"
+    },
+    {
+      "id": 5,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "get_catalog",
+        "call_id": "call_01_MlIj1yq1valGv4QJjTEG1239",
+        "ok": true,
+        "result": [
+          {
+            "table": "customers",
+            "description": "客户",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "contact",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "suppliers",
+            "description": "供应商",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "materials",
+            "description": "原料库存，stock/safety_stock单位见unit，unit_cost为元/单位",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "unit",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "safety_stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "unit_cost",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "supplier_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "products",
+            "description": "成品库存，stock单位为米，price元/米",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "spec",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "unit",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "price",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "stock",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "bom",
+            "description": "每生产1米所需原料用量，关联product_id和material_id",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "material_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 2
+              },
+              {
+                "cid": 2,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "machines",
+            "description": "设备：available可排产，maintenance维护中；实际忙碌状态查running工单",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "name",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "workshop",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "orders",
+            "description": "销售订单，一单一种产品；quantity/shipped为米；收入=quantity*unit_price，不代表回款",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "customer_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "unit_price",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "due_date",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 7,
+                "name": "shipped",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 8,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "work_orders",
+            "description": "生产工单，quantity为目标米数，good_qty/bad_qty为累计报工；planned/running/completed",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "product_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "machine_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "good_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "bad_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": "0",
+                "pk": 0
+              },
+              {
+                "cid": 7,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 8,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "production_reports",
+            "description": "报工质检明细，good_qty/bad_qty为本次米数；良品率=SUM(good_qty)/SUM(good_qty+bad_qty)",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "work_order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "good_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "bad_qty",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "defect",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "purchases",
+            "description": "原料采购单，ordered待收货/received已入库",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "material_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "supplier_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "unit_cost",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "status",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "stock_movements",
+            "description": "库存流水，quantity正为入库，负为出库；期初前历史不用于重建库存",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "INTEGER",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "item_type",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "item_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "reason",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "reference_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 6,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "shipments",
+            "description": "发货记录，quantity单位米",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "order_id",
+                "type": "TEXT",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "quantity",
+                "type": "REAL",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          },
+          {
+            "table": "audit",
+            "description": "业务操作审计（含输入与结果）",
+            "columns": [
+              {
+                "cid": 0,
+                "name": "id",
+                "type": "INTEGER",
+                "notnull": 0,
+                "dflt_value": null,
+                "pk": 1
+              },
+              {
+                "cid": 1,
+                "name": "operation",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 2,
+                "name": "request_id",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 3,
+                "name": "payload",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 4,
+                "name": "result",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              },
+              {
+                "cid": 5,
+                "name": "created_at",
+                "type": "TEXT",
+                "notnull": 1,
+                "dflt_value": null,
+                "pk": 0
+              }
+            ]
+          }
+        ]
+      },
+      "created_at": "2026-11-06T11:08:54+08:00"
+    },
+    {
+      "id": 6,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第2轮"
+      },
+      "created_at": "2026-11-06T11:08:54+08:00"
+    },
+    {
+      "id": 7,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT o.id AS order_id, c.name AS customer, p.name AS product, o.quantity, o.shipped, ROUND(o.quantity-o.shipped,2) AS unshipped, o.unit_price, ROUND(o.quantity*o.unit_price,2) AS order_amount, o.due_date, CAST(julianday(o.due_date)-julianday(date('2026-11-06','+8 hours')) AS INTEGER) AS days_left, o.status FROM orders o LEFT JOIN customers c ON c.id=o.customer_id LEFT JOIN products p ON p.id=o.product_id WHERE o.status<>'completed' OR o.shipped < o.quantity ORDER BY o.due_date"
+        },
+        "call_id": "call_00_94CHHAuWbBtEvJNmNyhE3490"
+      },
+      "created_at": "2026-11-06T11:08:58+08:00"
+    },
+    {
+      "id": 8,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_00_94CHHAuWbBtEvJNmNyhE3490",
+        "ok": true,
+        "result": {
+          "columns": [
+            "order_id",
+            "customer",
+            "product",
+            "quantity",
+            "shipped",
+            "unshipped",
+            "unit_price",
+            "order_amount",
+            "due_date",
+            "days_left",
+            "status"
+          ],
+          "rows": [
+            {
+              "order_id": "SO0001",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 900.0,
+              "shipped": 900.0,
+              "unshipped": 0.0,
+              "unit_price": 28.0,
+              "order_amount": 25200.0,
+              "due_date": "2026-10-24",
+              "days_left": -13,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0002",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 1000.0,
+              "shipped": 1000.0,
+              "unshipped": 0.0,
+              "unit_price": 32.0,
+              "order_amount": 32000.0,
+              "due_date": "2026-10-25",
+              "days_left": -12,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0003",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 1100.0,
+              "shipped": 1100.0,
+              "unshipped": 0.0,
+              "unit_price": 42.0,
+              "order_amount": 46200.0,
+              "due_date": "2026-10-26",
+              "days_left": -11,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0004",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 1200.0,
+              "shipped": 1200.0,
+              "unshipped": 0.0,
+              "unit_price": 28.0,
+              "order_amount": 33600.0,
+              "due_date": "2026-10-27",
+              "days_left": -10,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0005",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 1300.0,
+              "shipped": 1300.0,
+              "unshipped": 0.0,
+              "unit_price": 32.0,
+              "order_amount": 41600.0,
+              "due_date": "2026-10-28",
+              "days_left": -9,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0006",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 1400.0,
+              "shipped": 1400.0,
+              "unshipped": 0.0,
+              "unit_price": 42.0,
+              "order_amount": 58800.0,
+              "due_date": "2026-10-29",
+              "days_left": -8,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0007",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 1500.0,
+              "shipped": 1500.0,
+              "unshipped": 0.0,
+              "unit_price": 28.0,
+              "order_amount": 42000.0,
+              "due_date": "2026-10-30",
+              "days_left": -7,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0008",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 1600.0,
+              "shipped": 1600.0,
+              "unshipped": 0.0,
+              "unit_price": 32.0,
+              "order_amount": 51200.0,
+              "due_date": "2026-10-31",
+              "days_left": -6,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0009",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 1700.0,
+              "shipped": 1700.0,
+              "unshipped": 0.0,
+              "unit_price": 42.0,
+              "order_amount": 71400.0,
+              "due_date": "2026-11-01",
+              "days_left": -5,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0010",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 1800.0,
+              "shipped": 1800.0,
+              "unshipped": 0.0,
+              "unit_price": 28.0,
+              "order_amount": 50400.0,
+              "due_date": "2026-11-02",
+              "days_left": -4,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0011",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 1900.0,
+              "shipped": 1900.0,
+              "unshipped": 0.0,
+              "unit_price": 32.0,
+              "order_amount": 60800.0,
+              "due_date": "2026-11-03",
+              "days_left": -3,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0012",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 2000.0,
+              "shipped": 2000.0,
+              "unshipped": 0.0,
+              "unit_price": 42.0,
+              "order_amount": 84000.0,
+              "due_date": "2026-11-04",
+              "days_left": -2,
+              "status": "shipped"
+            },
+            {
+              "order_id": "SO0013",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 2100.0,
+              "shipped": 0.0,
+              "unshipped": 2100.0,
+              "unit_price": 28.0,
+              "order_amount": 58800.0,
+              "due_date": "2026-11-05",
+              "days_left": -1,
+              "status": "in_production"
+            },
+            {
+              "order_id": "SO0014",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 2200.0,
+              "shipped": 0.0,
+              "unshipped": 2200.0,
+              "unit_price": 32.0,
+              "order_amount": 70400.0,
+              "due_date": "2026-11-06",
+              "days_left": 0,
+              "status": "confirmed"
+            },
+            {
+              "order_id": "SO0015",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 2300.0,
+              "shipped": 0.0,
+              "unshipped": 2300.0,
+              "unit_price": 42.0,
+              "order_amount": 96600.0,
+              "due_date": "2026-11-07",
+              "days_left": 1,
+              "status": "confirmed"
+            },
+            {
+              "order_id": "SO0016",
+              "customer": "杭州云织服饰",
+              "product": "云感纯棉府绸",
+              "quantity": 2400.0,
+              "shipped": 0.0,
+              "unshipped": 2400.0,
+              "unit_price": 28.0,
+              "order_amount": 67200.0,
+              "due_date": "2026-11-08",
+              "days_left": 2,
+              "status": "confirmed"
+            },
+            {
+              "order_id": "SO0017",
+              "customer": "苏州远山家纺",
+              "product": "再生涤棉斜纹",
+              "quantity": 2500.0,
+              "shipped": 0.0,
+              "unshipped": 2500.0,
+              "unit_price": 32.0,
+              "order_amount": 80000.0,
+              "due_date": "2026-11-09",
+              "days_left": 3,
+              "status": "confirmed"
+            },
+            {
+              "order_id": "SO0018",
+              "customer": "宁波海风贸易",
+              "product": "靛蓝弹力牛仔",
+              "quantity": 2600.0,
+              "shipped": 0.0,
+              "unshipped": 2600.0,
+              "unit_price": 42.0,
+              "order_amount": 109200.0,
+              "due_date": "2026-11-10",
+              "days_left": 4,
+              "status": "confirmed"
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:08:58+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:08:58+08:00"
+    },
+    {
+      "id": 9,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT m.id, m.name, m.unit, m.stock, m.safety_stock, ROUND(m.safety_stock-m.stock,2) AS shortage, ROUND(m.stock/NULLIF(m.safety_stock,0)*100,1) AS pct_of_safety, s.name AS supplier FROM materials m LEFT JOIN suppliers s ON s.id=m.supplier_id WHERE m.stock < m.safety_stock ORDER BY shortage DESC"
+        },
+        "call_id": "call_01_q2jiqOyOK3E5iHqSUCyz2372"
+      },
+      "created_at": "2026-11-06T11:08:58+08:00"
+    },
+    {
+      "id": 10,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_01_q2jiqOyOK3E5iHqSUCyz2372",
+        "ok": true,
+        "result": {
+          "columns": [
+            "id",
+            "name",
+            "unit",
+            "stock",
+            "safety_stock",
+            "shortage",
+            "pct_of_safety",
+            "supplier"
+          ],
+          "rows": [
+            {
+              "id": "M002",
+              "name": "再生涤纶丝",
+              "unit": "kg",
+              "stock": 650.0,
+              "safety_stock": 1000.0,
+              "shortage": 350.0,
+              "pct_of_safety": 65.0,
+              "supplier": "新源纱业"
+            },
+            {
+              "id": "M003",
+              "name": "活性染料·靛蓝",
+              "unit": "kg",
+              "stock": 80.0,
+              "safety_stock": 100.0,
+              "shortage": 20.0,
+              "pct_of_safety": 80.0,
+              "supplier": "蓝禾染化"
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:08:59+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:08:59+08:00"
+    },
+    {
+      "id": 11,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT w.id AS work_order_id, w.order_id, p.name AS product, w.machine_id, mc.name AS machine_name, mc.status AS machine_status, w.quantity, w.good_qty, w.bad_qty, ROUND(w.quantity-w.good_qty-w.bad_qty,2) AS remaining, ROUND((w.good_qty+w.bad_qty)/NULLIF(w.quantity,0)*100,1) AS progress_pct, w.status, w.created_at FROM work_orders w LEFT JOIN products p ON p.id=w.product_id LEFT JOIN machines mc ON mc.id=w.machine_id WHERE w.status IN ('planned','running') ORDER BY w.status, w.created_at"
+        },
+        "call_id": "call_02_Np2h70Q2kv0i9KMza5xJ8063"
+      },
+      "created_at": "2026-11-06T11:08:59+08:00"
+    },
+    {
+      "id": 12,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_02_Np2h70Q2kv0i9KMza5xJ8063",
+        "ok": true,
+        "result": {
+          "columns": [
+            "work_order_id",
+            "order_id",
+            "product",
+            "machine_id",
+            "machine_name",
+            "machine_status",
+            "quantity",
+            "good_qty",
+            "bad_qty",
+            "remaining",
+            "progress_pct",
+            "status",
+            "created_at"
+          ],
+          "rows": [
+            {
+              "work_order_id": "WO0013",
+              "order_id": "SO0013",
+              "product": "云感纯棉府绸",
+              "machine_id": "MC01",
+              "machine_name": "喷气织机 A01",
+              "machine_status": "available",
+              "quantity": 2100.0,
+              "good_qty": 0.0,
+              "bad_qty": 0.0,
+              "remaining": 2100.0,
+              "progress_pct": 0.0,
+              "status": "planned",
+              "created_at": "2026-11-06T10:52:29+08:00"
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:08:59+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:08:59+08:00"
+    },
+    {
+      "id": 13,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT COUNT(*) AS reports, ROUND(SUM(good_qty),2) AS good_qty, ROUND(SUM(bad_qty),2) AS bad_qty, ROUND(SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0)*100,2) AS yield_pct FROM production_reports WHERE created_at >= datetime('2026-11-06','-30 days')"
+        },
+        "call_id": "call_03_Xg83DALi2IIVhNCu5be07145"
+      },
+      "created_at": "2026-11-06T11:08:59+08:00"
+    },
+    {
+      "id": 14,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_03_Xg83DALi2IIVhNCu5be07145",
+        "ok": true,
+        "result": {
+          "columns": [
+            "reports",
+            "good_qty",
+            "bad_qty",
+            "yield_pct"
+          ],
+          "rows": [
+            {
+              "reports": 0,
+              "good_qty": null,
+              "bad_qty": null,
+              "yield_pct": null
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:09:00+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:09:00+08:00"
+    },
+    {
+      "id": 15,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第3轮"
+      },
+      "created_at": "2026-11-06T11:09:00+08:00"
+    },
+    {
+      "id": 16,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT COUNT(*) AS total_reports, MIN(created_at) AS first_report, MAX(created_at) AS last_report, ROUND(SUM(good_qty),2) AS good_qty, ROUND(SUM(bad_qty),2) AS bad_qty, ROUND(SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0)*100,2) AS yield_pct FROM production_reports"
+        },
+        "call_id": "call_00_TQyTvTt5TJDGzaA8X26V5111"
+      },
+      "created_at": "2026-11-06T11:09:03+08:00"
+    },
+    {
+      "id": 17,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_00_TQyTvTt5TJDGzaA8X26V5111",
+        "ok": true,
+        "result": {
+          "columns": [
+            "total_reports",
+            "first_report",
+            "last_report",
+            "good_qty",
+            "bad_qty",
+            "yield_pct"
+          ],
+          "rows": [
+            {
+              "total_reports": 12,
+              "first_report": "2026-08-08T10:52:29+08:00",
+              "last_report": "2026-10-02T10:52:29+08:00",
+              "good_qty": 17400.0,
+              "bad_qty": 240.0,
+              "yield_pct": 98.64
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:09:04+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:09:04+08:00"
+    },
+    {
+      "id": 18,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "query_data",
+        "arguments": {
+          "sql": "SELECT o.id AS order_id, o.due_date, p.name AS product, o.quantity AS order_qty, m.id AS material_id, m.name AS material, m.unit, ROUND(b.quantity*o.quantity,2) AS need_qty, m.stock, ROUND(m.stock - b.quantity*o.quantity,2) AS gap FROM orders o JOIN products p ON p.id=o.product_id JOIN bom b ON b.product_id=o.product_id JOIN materials m ON m.id=b.material_id WHERE o.shipped < o.quantity ORDER BY o.due_date, m.id"
+        },
+        "call_id": "call_01_sRktFeaLZIIb143RQEcD5902"
+      },
+      "created_at": "2026-11-06T11:09:04+08:00"
+    },
+    {
+      "id": 19,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "query_data",
+        "call_id": "call_01_sRktFeaLZIIb143RQEcD5902",
+        "ok": true,
+        "result": {
+          "columns": [
+            "order_id",
+            "due_date",
+            "product",
+            "order_qty",
+            "material_id",
+            "material",
+            "unit",
+            "need_qty",
+            "stock",
+            "gap"
+          ],
+          "rows": [
+            {
+              "order_id": "SO0013",
+              "due_date": "2026-11-05",
+              "product": "云感纯棉府绸",
+              "order_qty": 2100.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 378.0,
+              "stock": 3800.0,
+              "gap": 3422.0
+            },
+            {
+              "order_id": "SO0013",
+              "due_date": "2026-11-05",
+              "product": "云感纯棉府绸",
+              "order_qty": 2100.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 16.8,
+              "stock": 260.0,
+              "gap": 243.2
+            },
+            {
+              "order_id": "SO0014",
+              "due_date": "2026-11-06",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2200.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 198.0,
+              "stock": 3800.0,
+              "gap": 3602.0
+            },
+            {
+              "order_id": "SO0014",
+              "due_date": "2026-11-06",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2200.0,
+              "material_id": "M002",
+              "material": "再生涤纶丝",
+              "unit": "kg",
+              "need_qty": 286.0,
+              "stock": 650.0,
+              "gap": 364.0
+            },
+            {
+              "order_id": "SO0014",
+              "due_date": "2026-11-06",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2200.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 22.0,
+              "stock": 260.0,
+              "gap": 238.0
+            },
+            {
+              "order_id": "SO0015",
+              "due_date": "2026-11-07",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2300.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 575.0,
+              "stock": 3800.0,
+              "gap": 3225.0
+            },
+            {
+              "order_id": "SO0015",
+              "due_date": "2026-11-07",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2300.0,
+              "material_id": "M003",
+              "material": "活性染料·靛蓝",
+              "unit": "kg",
+              "need_qty": 57.5,
+              "stock": 80.0,
+              "gap": 22.5
+            },
+            {
+              "order_id": "SO0015",
+              "due_date": "2026-11-07",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2300.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 27.6,
+              "stock": 260.0,
+              "gap": 232.4
+            },
+            {
+              "order_id": "SO0016",
+              "due_date": "2026-11-08",
+              "product": "云感纯棉府绸",
+              "order_qty": 2400.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 432.0,
+              "stock": 3800.0,
+              "gap": 3368.0
+            },
+            {
+              "order_id": "SO0016",
+              "due_date": "2026-11-08",
+              "product": "云感纯棉府绸",
+              "order_qty": 2400.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 19.2,
+              "stock": 260.0,
+              "gap": 240.8
+            },
+            {
+              "order_id": "SO0017",
+              "due_date": "2026-11-09",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2500.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 225.0,
+              "stock": 3800.0,
+              "gap": 3575.0
+            },
+            {
+              "order_id": "SO0017",
+              "due_date": "2026-11-09",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2500.0,
+              "material_id": "M002",
+              "material": "再生涤纶丝",
+              "unit": "kg",
+              "need_qty": 325.0,
+              "stock": 650.0,
+              "gap": 325.0
+            },
+            {
+              "order_id": "SO0017",
+              "due_date": "2026-11-09",
+              "product": "再生涤棉斜纹",
+              "order_qty": 2500.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 25.0,
+              "stock": 260.0,
+              "gap": 235.0
+            },
+            {
+              "order_id": "SO0018",
+              "due_date": "2026-11-10",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2600.0,
+              "material_id": "M001",
+              "material": "精梳棉纱 32S",
+              "unit": "kg",
+              "need_qty": 650.0,
+              "stock": 3800.0,
+              "gap": 3150.0
+            },
+            {
+              "order_id": "SO0018",
+              "due_date": "2026-11-10",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2600.0,
+              "material_id": "M003",
+              "material": "活性染料·靛蓝",
+              "unit": "kg",
+              "need_qty": 65.0,
+              "stock": 80.0,
+              "gap": 15.0
+            },
+            {
+              "order_id": "SO0018",
+              "due_date": "2026-11-10",
+              "product": "靛蓝弹力牛仔",
+              "order_qty": 2600.0,
+              "material_id": "M004",
+              "material": "柔软整理剂",
+              "unit": "kg",
+              "need_qty": 31.2,
+              "stock": 260.0,
+              "gap": 228.8
+            }
+          ],
+          "truncated": false,
+          "as_of": "2026-11-06T11:09:04+08:00",
+          "source": "ERP/MES SQLite",
+          "limit": 500
+        }
+      },
+      "created_at": "2026-11-06T11:09:04+08:00"
+    },
+    {
+      "id": 20,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第4轮"
+      },
+      "created_at": "2026-11-06T11:09:04+08:00"
+    },
+    {
+      "id": 21,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "create_report",
+        "arguments": {
+          "title": "生产经营晨报·异常明细（2026-11-06）",
+          "chart_type": "table",
+          "description": "未完成订单交期、低于安全库存原料、在制/待产工单、近30天质量四类异常汇总。订单金额=数量×单价，不等于回款。",
+          "sql": "WITH od AS (\n  SELECT '订单交期' AS category, o.id AS ref_id, c.name AS party, p.name AS item,\n         o.quantity AS qty, o.shipped AS done_qty, ROUND(o.quantity-o.shipped,2) AS open_qty,\n         o.due_date AS due_date,\n         CAST(julianday(o.due_date)-julianday(date('2026-11-06')) AS INTEGER) AS days_left,\n         ROUND(o.quantity*o.unit_price,2) AS amount,\n         CASE WHEN o.due_date < date('2026-11-06') THEN '已逾期' WHEN o.due_date = date('2026-11-06') THEN '今日到期' ELSE '临近到期' END AS issue\n  FROM orders o LEFT JOIN customers c ON c.id=o.customer_id LEFT JOIN products p ON p.id=o.product_id\n  WHERE o.shipped < o.quantity\n), mt AS (\n  SELECT '原料缺料' AS category, m.id AS ref_id, s.name AS party, m.name AS item,\n         m.stock AS qty, m.safety_stock AS done_qty, ROUND(m.safety_stock-m.stock,2) AS open_qty,\n         NULL AS due_date, NULL AS days_left, NULL AS amount,\n         '低于安全库存(' || m.unit || ')' AS issue\n  FROM materials m LEFT JOIN suppliers s ON s.id=m.supplier_id\n  WHERE m.stock < m.safety_stock\n), wo AS (\n  SELECT '在制工单' AS category, w.id AS ref_id, mc.name AS party, p.name AS item,\n         w.quantity AS qty, ROUND(w.good_qty+w.bad_qty,2) AS done_qty, ROUND(w.quantity-w.good_qty-w.bad_qty,2) AS open_qty,\n         o.due_date AS due_date,\n         CAST(julianday(o.due_date)-julianday(date('2026-11-06')) AS INTEGER) AS days_left, NULL AS amount,\n         CASE WHEN w.status='planned' THEN '已排产未下达/未开工' ELSE '生产中' END AS issue\n  FROM work_orders w LEFT JOIN products p ON p.id=w.product_id LEFT JOIN machines mc ON mc.id=w.machine_id\n  LEFT JOIN orders o ON o.id=w.order_id\n  WHERE w.status IN ('planned','running')\n), qc AS (\n  SELECT '质量' AS category, '近30天' AS ref_id, '生产报工' AS party, '全部产品' AS item,\n         COUNT(*) AS qty, ROUND(COALESCE(SUM(good_qty),0),2) AS done_qty, ROUND(COALESCE(SUM(bad_qty),0),2) AS open_qty,\n         NULL AS due_date, NULL AS days_left, NULL AS amount,\n         '近30天无报工记录（最近报工2026-10-02）' AS issue\n  FROM production_reports WHERE created_at >= datetime('2026-11-06','-30 days')\n)\nSELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM od\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM mt\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM wo\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM qc\nORDER BY category, days_left"
+        },
+        "call_id": "call_00_b51xSJqEzIa62iIAiAwJ9660"
+      },
+      "created_at": "2026-11-06T11:09:10+08:00"
+    },
+    {
+      "id": 22,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "create_report",
+        "call_id": "call_00_b51xSJqEzIa62iIAiAwJ9660",
+        "ok": true,
+        "result": {
+          "id": "RPT-747C6F6DA0",
+          "title": "生产经营晨报·异常明细（2026-11-06）",
+          "chart_type": "table",
+          "x": "",
+          "y": [],
+          "group": "",
+          "description": "未完成订单交期、低于安全库存原料、在制/待产工单、近30天质量四类异常汇总。订单金额=数量×单价，不等于回款。",
+          "data": {
+            "columns": [
+              "category",
+              "ref_id",
+              "party",
+              "item",
+              "qty",
+              "done_qty",
+              "open_qty",
+              "due_date",
+              "days_left",
+              "amount",
+              "issue"
+            ],
+            "rows": [
+              {
+                "category": "原料缺料",
+                "ref_id": "M002",
+                "party": "新源纱业",
+                "item": "再生涤纶丝",
+                "qty": 650.0,
+                "done_qty": 1000.0,
+                "open_qty": 350.0,
+                "due_date": null,
+                "days_left": null,
+                "amount": null,
+                "issue": "低于安全库存(kg)"
+              },
+              {
+                "category": "原料缺料",
+                "ref_id": "M003",
+                "party": "蓝禾染化",
+                "item": "活性染料·靛蓝",
+                "qty": 80.0,
+                "done_qty": 100.0,
+                "open_qty": 20.0,
+                "due_date": null,
+                "days_left": null,
+                "amount": null,
+                "issue": "低于安全库存(kg)"
+              },
+              {
+                "category": "在制工单",
+                "ref_id": "WO0013",
+                "party": "喷气织机 A01",
+                "item": "云感纯棉府绸",
+                "qty": 2100.0,
+                "done_qty": 0.0,
+                "open_qty": 2100.0,
+                "due_date": "2026-11-05",
+                "days_left": -1,
+                "amount": null,
+                "issue": "已排产未下达/未开工"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0013",
+                "party": "杭州云织服饰",
+                "item": "云感纯棉府绸",
+                "qty": 2100.0,
+                "done_qty": 0.0,
+                "open_qty": 2100.0,
+                "due_date": "2026-11-05",
+                "days_left": -1,
+                "amount": 58800.0,
+                "issue": "已逾期"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0014",
+                "party": "苏州远山家纺",
+                "item": "再生涤棉斜纹",
+                "qty": 2200.0,
+                "done_qty": 0.0,
+                "open_qty": 2200.0,
+                "due_date": "2026-11-06",
+                "days_left": 0,
+                "amount": 70400.0,
+                "issue": "今日到期"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0015",
+                "party": "宁波海风贸易",
+                "item": "靛蓝弹力牛仔",
+                "qty": 2300.0,
+                "done_qty": 0.0,
+                "open_qty": 2300.0,
+                "due_date": "2026-11-07",
+                "days_left": 1,
+                "amount": 96600.0,
+                "issue": "临近到期"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0016",
+                "party": "杭州云织服饰",
+                "item": "云感纯棉府绸",
+                "qty": 2400.0,
+                "done_qty": 0.0,
+                "open_qty": 2400.0,
+                "due_date": "2026-11-08",
+                "days_left": 2,
+                "amount": 67200.0,
+                "issue": "临近到期"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0017",
+                "party": "苏州远山家纺",
+                "item": "再生涤棉斜纹",
+                "qty": 2500.0,
+                "done_qty": 0.0,
+                "open_qty": 2500.0,
+                "due_date": "2026-11-09",
+                "days_left": 3,
+                "amount": 80000.0,
+                "issue": "临近到期"
+              },
+              {
+                "category": "订单交期",
+                "ref_id": "SO0018",
+                "party": "宁波海风贸易",
+                "item": "靛蓝弹力牛仔",
+                "qty": 2600.0,
+                "done_qty": 0.0,
+                "open_qty": 2600.0,
+                "due_date": "2026-11-10",
+                "days_left": 4,
+                "amount": 109200.0,
+                "issue": "临近到期"
+              },
+              {
+                "category": "质量",
+                "ref_id": "近30天",
+                "party": "生产报工",
+                "item": "全部产品",
+                "qty": 0,
+                "done_qty": 0.0,
+                "open_qty": 0.0,
+                "due_date": null,
+                "days_left": null,
+                "amount": null,
+                "issue": "近30天无报工记录（最近报工2026-10-02）"
+              }
+            ],
+            "truncated": false,
+            "as_of": "2026-11-06T11:09:11+08:00",
+            "source": "ERP/MES SQLite",
+            "limit": 500
+          },
+          "sql": "WITH od AS (\n  SELECT '订单交期' AS category, o.id AS ref_id, c.name AS party, p.name AS item,\n         o.quantity AS qty, o.shipped AS done_qty, ROUND(o.quantity-o.shipped,2) AS open_qty,\n         o.due_date AS due_date,\n         CAST(julianday(o.due_date)-julianday(date('2026-11-06')) AS INTEGER) AS days_left,\n         ROUND(o.quantity*o.unit_price,2) AS amount,\n         CASE WHEN o.due_date < date('2026-11-06') THEN '已逾期' WHEN o.due_date = date('2026-11-06') THEN '今日到期' ELSE '临近到期' END AS issue\n  FROM orders o LEFT JOIN customers c ON c.id=o.customer_id LEFT JOIN products p ON p.id=o.product_id\n  WHERE o.shipped < o.quantity\n), mt AS (\n  SELECT '原料缺料' AS category, m.id AS ref_id, s.name AS party, m.name AS item,\n         m.stock AS qty, m.safety_stock AS done_qty, ROUND(m.safety_stock-m.stock,2) AS open_qty,\n         NULL AS due_date, NULL AS days_left, NULL AS amount,\n         '低于安全库存(' || m.unit || ')' AS issue\n  FROM materials m LEFT JOIN suppliers s ON s.id=m.supplier_id\n  WHERE m.stock < m.safety_stock\n), wo AS (\n  SELECT '在制工单' AS category, w.id AS ref_id, mc.name AS party, p.name AS item,\n         w.quantity AS qty, ROUND(w.good_qty+w.bad_qty,2) AS done_qty, ROUND(w.quantity-w.good_qty-w.bad_qty,2) AS open_qty,\n         o.due_date AS due_date,\n         CAST(julianday(o.due_date)-julianday(date('2026-11-06')) AS INTEGER) AS days_left, NULL AS amount,\n         CASE WHEN w.status='planned' THEN '已排产未下达/未开工' ELSE '生产中' END AS issue\n  FROM work_orders w LEFT JOIN products p ON p.id=w.product_id LEFT JOIN machines mc ON mc.id=w.machine_id\n  LEFT JOIN orders o ON o.id=w.order_id\n  WHERE w.status IN ('planned','running')\n), qc AS (\n  SELECT '质量' AS category, '近30天' AS ref_id, '生产报工' AS party, '全部产品' AS item,\n         COUNT(*) AS qty, ROUND(COALESCE(SUM(good_qty),0),2) AS done_qty, ROUND(COALESCE(SUM(bad_qty),0),2) AS open_qty,\n         NULL AS due_date, NULL AS days_left, NULL AS amount,\n         '近30天无报工记录（最近报工2026-10-02）' AS issue\n  FROM production_reports WHERE created_at >= datetime('2026-11-06','-30 days')\n)\nSELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM od\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM mt\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM wo\nUNION ALL SELECT category, ref_id, party, item, qty, done_qty, open_qty, due_date, days_left, amount, issue FROM qc\nORDER BY category, days_left",
+          "created_at": "2026-11-06T11:09:11+08:00"
+        }
+      },
+      "created_at": "2026-11-06T11:09:11+08:00"
+    },
+    {
+      "id": 23,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_start",
+      "payload": {
+        "name": "create_report",
+        "arguments": {
+          "title": "未完成订单金额按产品汇总（2026-11-06）",
+          "chart_type": "bar",
+          "description": "按产品聚合未完成订单（未发货数量>0）的订单金额=数量×单价，单位元；订单金额不等于回款。",
+          "sql": "SELECT p.name AS product, COUNT(*) AS order_cnt, ROUND(SUM(o.quantity-o.shipped),2) AS open_qty_m, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM orders o JOIN products p ON p.id=o.product_id WHERE o.shipped < o.quantity GROUP BY p.name ORDER BY order_amount DESC",
+          "x": "product",
+          "y": [
+            "order_amount"
+          ]
+        },
+        "call_id": "call_01_R9rjY2x7W1ogvJrDW30Y1609"
+      },
+      "created_at": "2026-11-06T11:09:11+08:00"
+    },
+    {
+      "id": 24,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "tool_result",
+      "payload": {
+        "name": "create_report",
+        "call_id": "call_01_R9rjY2x7W1ogvJrDW30Y1609",
+        "ok": true,
+        "result": {
+          "id": "RPT-D88689B0AB",
+          "title": "未完成订单金额按产品汇总（2026-11-06）",
+          "chart_type": "bar",
+          "x": "product",
+          "y": [
+            "order_amount"
+          ],
+          "group": "",
+          "description": "按产品聚合未完成订单（未发货数量>0）的订单金额=数量×单价，单位元；订单金额不等于回款。",
+          "data": {
+            "columns": [
+              "product",
+              "order_cnt",
+              "open_qty_m",
+              "order_amount"
+            ],
+            "rows": [
+              {
+                "product": "靛蓝弹力牛仔",
+                "order_cnt": 2,
+                "open_qty_m": 4900.0,
+                "order_amount": 205800.0
+              },
+              {
+                "product": "再生涤棉斜纹",
+                "order_cnt": 2,
+                "open_qty_m": 4700.0,
+                "order_amount": 150400.0
+              },
+              {
+                "product": "云感纯棉府绸",
+                "order_cnt": 2,
+                "open_qty_m": 4500.0,
+                "order_amount": 126000.0
+              }
+            ],
+            "truncated": false,
+            "as_of": "2026-11-06T11:09:11+08:00",
+            "source": "ERP/MES SQLite",
+            "limit": 500
+          },
+          "sql": "SELECT p.name AS product, COUNT(*) AS order_cnt, ROUND(SUM(o.quantity-o.shipped),2) AS open_qty_m, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM orders o JOIN products p ON p.id=o.product_id WHERE o.shipped < o.quantity GROUP BY p.name ORDER BY order_amount DESC",
+          "created_at": "2026-11-06T11:09:11+08:00"
+        }
+      },
+      "created_at": "2026-11-06T11:09:11+08:00"
+    },
+    {
+      "id": 25,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "status",
+      "payload": {
+        "message": "模型正在处理 · 第5轮"
+      },
+      "created_at": "2026-11-06T11:09:11+08:00"
+    },
+    {
+      "id": 26,
+      "run_id": "RUN-AB35CF4772",
+      "kind": "answer",
+      "payload": {
+        "content": "# 生产经营晨报（2026-11-06，中国时区）\n\n已按 daily-review 技能完成只读检查，**未执行任何写业务操作**。\n\n## 一、未完成订单交期（6 单，均未发货）\n| 订单 | 客户 | 产品 | 未发数量(米) | 交期 | 状态 | 订单金额(元) |\n|---|---|---|---|---|---|---|\n| SO0013 | 杭州云织服饰 | 云感纯棉府绸 | 2100 | 2026-11-05 | **已逾期1天** | 58,800 |\n| SO0014 | 苏州远山家纺 | 再生涤棉斜纹 | 2200 | 2026-11-06 | **今日到期** | 70,400 |\n| SO0015 | 宁波海风贸易 | 靛蓝弹力牛仔 | 2300 | 2026-11-07 | 明日到期 | 96,600 |\n| SO0016 | 杭州云织服饰 | 云感纯棉府绸 | 2400 | 2026-11-08 | 2天后 | 67,200 |\n| SO0017 | 苏州远山家纺 | 再生涤棉斜纹 | 2500 | 2026-11-09 | 3天后 | 80,000 |\n| SO0018 | 宁波海风贸易 | 靛蓝弹力牛仔 | 2600 | 2026-11-10 | 4天后 | 109,200 |\n\n合计未发 14,100 米，订单金额合计 482,200 元（**订单金额≠回款**，仅按数量×单价计算）。\n\n## 二、低于安全库存的原料（2 项）\n- M002 再生涤纶丝：库存 650 kg / 安全 1000 kg，缺口 350 kg（供应商：新源纱业）\n- M003 活性染料·靛蓝：库存 80 kg / 安全 100 kg，缺口 20 kg（供应商：蓝禾染化）\n\n按 BOM 测算，M002 缺口已直接卡住 SO0014（需 286 kg，余量仅 364 kg）与 SO0017（需 325 kg）；M003 缺口影响 SO0015（需 57.5 kg，余 22.5 kg）与 SO0018（需 65 kg，余 15 kg）。\n\n## 三、在制/待产工单（1 张）\n- WO0013（对应 SO0013，云感纯棉府绸 2100 米，喷气织机 A01）：状态 planned，报工 0，进度 0%，**已排产但未下达、未开工**，而其订单已逾期 1 天。其余 5 张未完成订单（SO0014–SO0018）**尚无生产工单**。\n\n## 四、最近30天质量\n- 近 30 天（2026-10-07 起）**无任何报工质检记录**，良品率无法计算。\n- 全库历史共 12 条报工（2026-08-08 至 2026-10-02），累计良品 17,400 米、不良 240 米，历史良品率 98.64%。近一个月无报工本身即为异常信号（可能未报工或产线停滞）。\n\n## 五、报告编号\n- RPT-747C6F6DA0：生产经营晨报·异常明细（table，四类异常汇总）\n- RPT-D88689B0AB：未完成订单金额按产品汇总（bar）：靛蓝弹力牛仔 205,800 元 / 再生涤棉斜纹 150,400 元 / 云感纯棉府绸 126,000 元\n\n## 六、行动建议（需您确认后再执行）\n1. 优先处理 SO0013：WO0013 已排产未下达，建议核实原料齐套后下达并开工，同时向客户通报逾期。\n2. 对 SO0014（今日到期）立即排产，但需先补 M002 再生涤纶丝（缺口 350 kg 以上，建议按 500 kg 量级采购）。\n3. 补 M003 靛蓝染料至少 20 kg，保障 SO0015/SO0018 的牛仔订单。\n4. 为 SO0015–SO0018 尽快建工单排产，避免逾期面扩大。\n5. 核查近 30 天无报工原因（是否漏报或停机），恢复报工以恢复质量监控。\n\n限制说明：以上均为只读查询结果；订单金额不等于实收收入或回款；缺料测算基于当前库存与 BOM 静态对比，未考虑在途采购。"
+      },
+      "created_at": "2026-11-06T11:09:19+08:00"
+    }
+  ],
+  "status": "completed",
+  "usage": {
+    "prompt_tokens": 43384,
+    "completion_tokens": 3277,
+    "model": "deepseek-flash",
+    "model_calls": 5
+  }
+}

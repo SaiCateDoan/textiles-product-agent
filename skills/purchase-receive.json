@@ -1,0 +1,11 @@
+{
+  "id":"purchase-receive",
+  "name":"采购与到货入库",
+  "description":"对已确认到货的原料创建采购单并立即入库，完整记录库存流水。",
+  "instructions":"仅当用户明确说明原料已到货并要求入库时运行。尚未到货只用create_purchase。先查询原料ID及计量单位，运行后核对库存变化，报告采购单号。",
+  "inputs":{"material_id":{"type":"string","description":"原料ID"},"quantity":{"type":"number","description":"实际到货数量，单位同原料"}},
+  "steps":[
+    {"id":"purchase","operation":"create_purchase","params":{"material_id":"$input.material_id","quantity":"$input.quantity"}},
+    {"id":"receipt","operation":"receive_purchase","params":{"purchase_id":"$steps.purchase.id"}}
+  ]
+}
