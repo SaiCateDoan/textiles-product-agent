@@ -17,16 +17,20 @@ async function api(path, options={}) {
   if(response.status===401 && path!='/auth/login'){showLogin();throw new Error('请重新登录');}
   if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail || data));
   if(path==='/bootstrap' && state.bootstrap)state.bootstrap=data;
+  if(path==='/auth/session' && state.bootstrap)state.bootstrap.token=data.token;
   return data;
 }
 const post = (path, body) => api(path,{method:'POST',body:JSON.stringify(body)});
 function toast(text) { const node=$('#toast'); node.textContent=text;node.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.style.display='none',4000); }
 function errorBox(error) { return `<div class="error">${h(error.message || error)}</div>`; }
 function heading(eyebrow,title,subtitle,actions='') { return `<div class="page-heading"><div><div class="eyebrow">${h(eyebrow)}</div><h1>${h(title)}</h1><p class="subtitle">${h(subtitle)}</p></div><div class="actions">${actions}</div></div>`; }
-const chartObservers=new Map();
+const chartObservers=new Map(),pendingReports=new Map();
+const chatReportObserver=window.IntersectionObserver?new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){const paint=pendingReports.get(entry.target);pendingReports.delete(entry.target);chatReportObserver.unobserve(entry.target);if(entry.target.isConnected)paint?.();}},{rootMargin:'300px'}):null;
+function clearPendingReports(container){for(const node of pendingReports.keys())if(!container||container.contains(node)){chatReportObserver?.unobserve(node);pendingReports.delete(node);}}
+
 function disposeChart(instance) { chartObservers.get(instance)?.disconnect();chartObservers.delete(instance);if(!instance.isDisposed())instance.dispose(); }
-function disposeCharts() { state.charts.forEach(disposeChart);state.charts=[]; }
-function disposeChartsWithin(container) { state.charts=state.charts.filter(c=>{if(c.isDisposed() || container?.contains(c.getDom())){disposeChart(c);return false;}return true;}); }
+function disposeCharts() { clearPendingReports();state.charts.forEach(disposeChart);state.charts=[]; }
+function disposeChartsWithin(container) { if(container)clearPendingReports(container);state.charts=state.charts.filter(c=>{if(c.isDisposed() || container?.contains(c.getDom())){disposeChart(c);return false;}return true;}); }
 function chart(node,option) { if(!node) return; const previous=echarts.getInstanceByDom(node);if(previous)disposeChart(previous);state.charts=state.charts.filter(c=>!c.isDisposed());const instance=echarts.init(node);instance.setOption(option);state.charts.push(instance);if(window.ResizeObserver){const observer=new ResizeObserver(()=>{if(node.isConnected&&!instance.isDisposed())instance.resize();});observer.observe(node);chartObservers.set(instance,observer);}return instance; }
 window.addEventListener('resize',()=>state.charts.filter(c=>!c.isDisposed()).forEach(c=>c.resize()));
 function statusTag(value) { const kind=['planned','ordered','maintenance'].includes(value)?'warn':['shipped','completed','received'].includes(value)?'gray':'';return `<span class="tag ${kind}">${h(statusNames[value] || value)}</span>`; }
@@ -131,21 +135,37 @@ function appendChatReport(report) {
   let nav=$('#chat-artifacts');
   if(!nav){nav=document.createElement('div');nav.id='chat-artifacts';nav.className='chat-artifact-nav';nav.setAttribute('aria-label','对话报表快捷入口');parent.before(nav);const label=document.createElement('span');label.textContent='本对话报表';nav.appendChild(label);}
   const jump=document.createElement('button');jump.textContent=report.title;jump.title=report.title;jump.onclick=()=>card.scrollIntoView({block:'center',behavior:'smooth'});nav.appendChild(jump);
-  const paint=()=>drawReport($('.chat-report-view',card),DemoUI.withAxes(report,$('.report-view',card).value));
-  $('.report-view',card).onchange=paint;$('.open-report',card).onclick=()=>{state.report=report.id;navigate('reports');};paint();
+  const paint=()=>{pendingReports.delete(card);chatReportObserver?.unobserve(card);drawReport($('.chat-report-view',card),DemoUI.withAxes(report,$('.report-view',card).value));};
+  $('.report-view',card).onchange=paint;$('.open-report',card).onclick=()=>{state.report=report.id;navigate('reports');};if(chatReportObserver){$('.chat-report-view',card).innerHTML='<div class="loading">图表将在进入视野时绘制…</div>';pendingReports.set(card,paint);chatReportObserver.observe(card);}else paint();
 }
 async function loadChat(){
   if(state.page!=='agent')return;
   if(!state.session){$('#chat-messages').innerHTML=`<div class="chat-welcome"><span class="spark">✳</span><h2>今天，想从哪里开始？</h2><p class="subtitle">${Object.keys(state.bootstrap.commands).length?'我可以帮你分析业务，也可以办理岗位内的业务。':'我可以帮你查询业务数据、分析趋势并生成图表。'}</p><div class="suggestions">${suggestions().map(prompt=>`<button data-prompt="${h(prompt)}">${h(prompt)} ↗</button>`).join('')}</div></div>`;$$('#chat-messages [data-prompt]').forEach(b=>b.onclick=()=>{$('#chat-input').value=b.dataset.prompt;$('#chat-input').focus();});return;}
   const sessionId=state.session,session=await api('/sessions/'+sessionId);if(state.page!=='agent'||state.session!==sessionId)return;
+  renderHistory(session.messages,session.has_more,session.before_id,sessionId);
+  const last=session.runs.at(-1);if(last){state.run=last.id;const run=await loadRunEvents(last.id,sessionId);if(state.page!=='agent'||state.session!==sessionId)return;if(last.status==='running'&&!state.polling){state.busy=true;pollRun(last.id);}else if(last.status==='interrupted'){$('#trace-list').innerHTML+=errorBox('上次执行因服务重启中断，请核对业务记录后继续。');}}
+  if(last&&last.status!=='running')$('#chat-status').textContent=last.status==='completed'?'任务已完成 · 可从上方报表入口查看图表':'任务未完成 · 请查看执行记录';
+  $('#chat-messages').scrollTop=$('#chat-messages').scrollHeight;
+}
+function renderHistory(messages,hasMore,beforeId,sessionId){
   disposeChartsWithin($('#chat-messages'));$('#chat-artifacts')?.remove();$('#chat-messages').innerHTML='';
-  for(const entry of DemoUI.chatEntries(session.messages)){
+  if(hasMore){
+    const button=document.createElement('button');button.textContent='加载更早的消息';button.id='older-messages';$('#chat-messages').appendChild(button);
+    button.onclick=async()=>{button.disabled=true;try{const previous=await api('/sessions/'+sessionId+'?before='+beforeId);if(state.page!=='agent'||state.session!==sessionId)return;
+      const height=$('#chat-messages').scrollHeight;renderHistory([...previous.messages,...messages],previous.has_more,previous.before_id,sessionId);$('#chat-messages').scrollTop=$('#chat-messages').scrollHeight-height;
+    }catch(error){toast(error.message);button.disabled=false;}};
+  }
+  for(const entry of DemoUI.chatEntries(messages)){
     if(entry.kind==='report')appendChatReport(entry.report);
     else $('#chat-messages').insertAdjacentHTML('beforeend',messageHtml(entry.role,entry.text));
   }
-  const last=session.runs.at(-1);if(last){state.run=last.id;const run=await api('/runs/'+last.id);if(state.page!=='agent'||state.session!==sessionId)return;$('#trace-list').innerHTML='';run.events.forEach(renderEvent);if(last.status==='running'&&!state.polling){state.busy=true;pollRun(last.id);}else if(last.status==='interrupted'){$('#trace-list').innerHTML+=errorBox('上次执行因服务重启中断，请核对业务记录后继续。');}}
-  if(last&&last.status!=='running')$('#chat-status').textContent=last.status==='completed'?'任务已完成 · 可从上方报表入口查看图表':'任务未完成 · 请查看执行记录';
-  $('#chat-messages').scrollTop=$('#chat-messages').scrollHeight;
+}
+async function loadRunEvents(id,sessionId){
+  let after=0,run;$('#trace-list').innerHTML='';
+  do{run=await api('/runs/'+id+'?after='+after);if(state.page!=='agent'||state.session!==sessionId)return run;
+    for(const event of run.events){after=event.id;renderEvent(event);}
+  }while(run.has_more);
+  state.eventCursor={id,after};return run;
 }
 async function sendChat(e){
   e.preventDefault();if(state.busy)return;const text=$('#chat-input').value.trim();if(!text)return;
@@ -157,25 +177,27 @@ function renderEvent(e){
   if(e.kind==='tool_result'&&e.payload.ok&&e.payload.name==='create_report')appendChatReport(e.payload.result);
   const parent=$('#trace-list');if(!parent||parent.querySelector(`[data-event="${e.id}"]`))return;
   const p=e.payload;
-  if(e.kind==='tool_start')parent.insertAdjacentHTML('beforeend',`<details class="trace-event" data-event="${e.id}"><summary>↗ ${h(p.name)}</summary><pre>${h(JSON.stringify(p.arguments,null,2))}</pre></details>`);
+  if(e.kind==='tool_start')parent.insertAdjacentHTML('beforeend',`<details class="trace-event" data-event="${e.id}"><summary>↗ ${h(p.name)}</summary><pre></pre></details>`);
   if(e.kind==='tool_result'){
-    parent.insertAdjacentHTML('beforeend',`<details class="trace-event ${p.ok?'':'fail'}" data-event="${e.id}"><summary>${p.ok?'✓':'!'} ${h(p.name)} ${p.ok?'完成':'未成功'}</summary><pre>${h(JSON.stringify(p.result || p.error,null,2))}</pre></details>`);
+    parent.insertAdjacentHTML('beforeend',`<details class="trace-event ${p.ok?'':'fail'}" data-event="${e.id}"><summary>${p.ok?'✓':'!'} ${h(p.name)} ${p.ok?'完成':'未成功'}</summary><pre></pre></details>`);
     if(p.ok&&p.name==='create_report') {const b=document.createElement('button');b.className='artifact-link';b.textContent='◷ '+p.result.title;b.onclick=()=>{state.report=p.result.id;navigate('reports');};parent.appendChild(b);}
   }
   if(e.kind==='status') {parent.insertAdjacentHTML('beforeend',`<div class="trace-status" data-event="${e.id}">${h(p.message)}</div>`);if($('#chat-status'))$('#chat-status').textContent=p.message;}
   if(e.kind==='error')parent.insertAdjacentHTML('beforeend',`<div class="error" data-event="${e.id}">${h(p.message)}</div>`);
+  const details=parent.querySelector(`details[data-event="${e.id}"]`);if(details)details.ontoggle=()=>{if(details.open&&!details.dataset.loaded){$('pre',details).textContent=JSON.stringify(e.kind==='tool_start'?p.arguments:p.result||p.error,null,2);details.dataset.loaded='1';}};
   parent.scrollTop=parent.scrollHeight;
 }
 async function pollRun(id){
-  if(state.polling)return;state.polling=true;let after=0;const generation=state.authGeneration;
+  if(state.polling)return;state.polling=true;let after=state.eventCursor?.id===id?state.eventCursor.after:0;const generation=state.authGeneration;
   try{while(generation===state.authGeneration){const run=await api('/runs/'+id+'?after='+after);for(const e of run.events){after=e.id;if(state.page==='agent'&&state.run===id)renderEvent(e);}
+    if(run.has_more)continue;
     if(run.status!=='running'){state.busy=false;if(state.page==='agent'){await loadChat();if($('#chat-send'))$('#chat-send').disabled=false;if($('#chat-status'))$('#chat-status').textContent=`${run.status==='completed'?'已完成':'未完成'} · 模型调用 ${run.usage.model_calls||0} 次 · ${number((run.usage.prompt_tokens||0)+(run.usage.completion_tokens||0))} tokens`;}else toast(run.status==='completed'?'助手任务已完成':'助手任务未完成，请查看执行记录');break;}
     await new Promise(resolve=>setTimeout(resolve,1200));
   }}catch(error){if(generation===state.authGeneration){state.busy=false;toast('连接中断：'+error.message);if($('#chat-send'))$('#chat-send').disabled=false;}}finally{if(generation===state.authGeneration)state.polling=false;}
 }
 
 let reportDraft={title:'产品订单金额',chart_type:'bar',sql:'SELECT p.name AS 产品, ROUND(SUM(o.quantity*o.unit_price),2) AS 订单金额 FROM orders o JOIN products p ON p.id=o.product_id GROUP BY p.id,p.name ORDER BY 订单金额 DESC',rows:[],x:'',y:[],group:'',description:''};
-let reportColumns=[];
+let reportColumns=[],reportGridPage=0;
 async function reportsPage(){
   const reports=await api('/reports');if(state.page!=='reports')return;
   if(!state.report&&!reportDraft.rows.length&&reports.length)state.report=reports[0].id;
@@ -184,7 +206,7 @@ async function reportsPage(){
   $('#page').innerHTML=heading('REPORT STUDIO','让数据，呈现更多可能。','AI生成报表，也可以在线编辑数据、切换图形，保存与导出。',`<button class="primary" id="new-report">＋ 新建报表</button>`)+`<div class="report-layout"><aside class="card report-list"><h2>已保存的报表 <span class="badge-count">${reports.length}</span></h2>${reports.map(r=>`<button class="report-item ${r.id===state.report?'active':''}" data-report="${r.id}">${h(r.title)}<small>${h(chartTypes[r.chart_type])} · ${h(r.created_at.slice(5,16).replace('T',' '))}</small></button>`).join('') || '<p class="note mt">向助手提出报表需求，或在右侧绘制第一张报表。</p>'}</aside><section class="card"><div class="card-body"><div class="form-grid"><div class="field"><label>报表名称</label><input id="report-title" value="${h(reportDraft.title)}"></div><div class="field"><label>展示类型</label><select id="report-type">${Object.entries(chartTypes).map(([k,v])=>`<option value="${k}" ${k===reportDraft.chart_type?'selected':''}>${v}</option>`).join('')}</select></div></div><div class="field mt"><label>数据说明 / 分析口径</label><input id="report-description" value="${h(reportDraft.description)}" placeholder="例如：订单金额按下单日期统计，不代表实收"></div><details class="mt" ${reportDraft.rows.length?'':'open'}><summary class="note">SQL 数据源（只读）</summary><textarea id="report-sql" class="code code-editor" aria-label="只读SQL查询">${h(reportDraft.sql)}</textarea><button id="run-query" class="mt">↻ 查询数据</button></details><div class="editor-grid mt" id="chart-fields"></div><div class="editor-table" id="editable-data"></div><div class="actions mt"><button id="add-row">＋ 行</button><button id="add-column">＋ 列</button><button id="import-json">导入 JSON</button><button id="preview-chart" class="soft">预览图表</button><button id="save-report" class="primary">保存报表</button><button id="export-csv">导出 CSV</button><button id="export-png">导出 PNG</button></div><div id="report-error" class="mt"></div><div class="report-preview"><h2 id="preview-title">${h(reportDraft.title)}</h2><div id="report-chart"></div><div id="report-table"></div><div class="report-meta"><span id="report-source">${h(reportDraft.data?.source || '查询数据后可开始绘图')}</span><span>${h(reportDraft.data?.as_of || '')}</span></div></div></div></section></div>`;
   $$('[data-report]').forEach(b=>b.onclick=()=>{state.report=b.dataset.report;reportsPage();});
   $('#new-report').onclick=()=>{state.report=null;reportDraft={title:'新建报表',chart_type:'table',rows:[{'项目':'样例 A','数值':10},{'项目':'样例 B','数值':20}],sql:'',x:'项目',y:['数值'],group:'',description:''};reportColumns=['项目','数值'];reportsPage();};
-  $('#run-query').onclick=async()=>{try{const data=await post('/query',{sql:$('#report-sql').value});reportDraft.sql=$('#report-sql').value;reportDraft.rows=data.rows;reportDraft.data=data;reportColumns=data.columns;$('#report-source').textContent=data.source+(data.truncated?' · 结果已截断至500行':'');renderGrid();renderChartFields();previewReport();}catch(error){$('#report-error').innerHTML=errorBox(error);}};
+  $('#run-query').onclick=async()=>{try{const data=await post('/query',{sql:$('#report-sql').value});reportDraft.sql=$('#report-sql').value;reportDraft.rows=data.rows;reportDraft.data=data;reportColumns=data.columns;$('#report-source').textContent=data.source+(data.truncated?' · 结果已截断，请缩小查询范围':'');renderGrid();renderChartFields();previewReport();}catch(error){$('#report-error').innerHTML=errorBox(error);}};
   $('#report-type').onchange=()=>{readDraft();renderChartFields();previewReport();};
   $('#add-row').onclick=()=>{if(reportDraft.rows.length>=500)return toast('最多500行');if(!reportColumns.length)reportColumns=['项目','数值'];reportDraft.rows.push(Object.fromEntries(reportColumns.map((c,i)=>[c,i===0?'新项目':0])));manualData();renderGrid();renderChartFields();};
   $('#add-column').onclick=()=>{const name=prompt('新列名称');if(!name)return;if(reportColumns.includes(name))return toast('列名已存在');if(reportColumns.length>=50)return toast('最多50列');reportColumns.push(name);reportDraft.rows.forEach(r=>r[name]=0);manualData();renderGrid();renderChartFields();};
@@ -198,7 +220,9 @@ async function reportsPage(){
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function manualData(){reportDraft.sql='';if($('#report-sql'))$('#report-sql').value='';if($('#report-source'))$('#report-source').textContent='手工编辑数据（已断开原SQL，保存当前编辑内容）';}
 function renderGrid(){
-  $('#editable-data').innerHTML=reportColumns.length?`<table><thead><tr>${reportColumns.map(c=>`<th>${h(c)}</th>`).join('')}<th>操作</th></tr></thead><tbody>${reportDraft.rows.map((row,i)=>`<tr>${reportColumns.map((c,j)=>`<td><input aria-label="第${i+1}行 ${h(c)}" data-row="${i}" data-col="${j}" value="${h(row[c])}"></td>`).join('')}<td><button data-remove-row="${i}">删除</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">执行查询，或添加列和数据行开始绘图</div>';
+  const pages=Math.max(1,Math.ceil(reportDraft.rows.length/50));reportGridPage=Math.min(reportGridPage,pages-1);const offset=reportGridPage*50;
+  $('#editable-data').innerHTML=reportColumns.length?`<table><thead><tr>${reportColumns.map(c=>`<th>${h(c)}</th>`).join('')}<th>操作</th></tr></thead><tbody>${reportDraft.rows.slice(offset,offset+50).map((row,index)=>{const i=offset+index;return `<tr>${reportColumns.map((c,j)=>`<td><input aria-label="第${i+1}行 ${h(c)}" data-row="${i}" data-col="${j}" value="${h(row[c])}"></td>`).join('')}<td><button data-remove-row="${i}">删除</button></td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">执行查询，或添加列和数据行开始绘图</div>';
+  if(pages>1){$('#editable-data').insertAdjacentHTML('beforeend',`<div class="actions mt"><button id="grid-prev" ${reportGridPage===0?'disabled':''}>上一页</button><span>第 ${reportGridPage+1} / ${pages} 页 · 共 ${reportDraft.rows.length} 行</span><button id="grid-next" ${reportGridPage===pages-1?'disabled':''}>下一页</button></div>`);$('#grid-prev').onclick=()=>{reportGridPage--;renderGrid();};$('#grid-next').onclick=()=>{reportGridPage++;renderGrid();};}
   $$('#editable-data input').forEach(input=>input.onchange=()=>{const value=input.value;reportDraft.rows[Number(input.dataset.row)][reportColumns[Number(input.dataset.col)]]=value.trim()!==''&&Number.isFinite(Number(value))?Number(value):value;manualData();});
   $$('[data-remove-row]').forEach(button=>button.onclick=()=>{reportDraft.rows.splice(Number(button.dataset.removeRow),1);manualData();renderGrid();});
 }
@@ -247,8 +271,8 @@ function suggestions(){
 }
 function showLogin(){
   state.authGeneration=(state.authGeneration||0)+1;
-  disposeCharts();state.bootstrap=null;state.page='login';state.session=null;state.report=null;state.run=null;state.pendingPrompt=null;state.busy=false;state.polling=false;
-  reportDraft={title:'新建报表',chart_type:'table',sql:'',rows:[],x:'',y:[],group:'',description:''};reportColumns=[];
+  disposeCharts();state.bootstrap=null;state.page='login';state.session=null;state.report=null;state.run=null;state.pendingPrompt=null;state.eventCursor=null;state.busy=false;state.polling=false;
+  reportDraft={title:'新建报表',chart_type:'table',sql:'',rows:[],x:'',y:[],group:'',description:''};reportColumns=[];reportGridPage=0;
   $('#modal').close();$('#modal-body').innerHTML='';$('#page').innerHTML='';$('#identity').textContent='';
   $$('[data-shell]').forEach(n=>n.hidden=true);$('#login-screen').hidden=false;$('#login-password').value='';
 }
@@ -274,8 +298,8 @@ $('#login-form').onsubmit=async e=>{
 };
 $('#logout').onclick=async()=>{try{await post('/auth/logout',{});showLogin();location.hash='';}catch(error){toast(error.message);}};
 // Revalidate after switching tabs so revoked accounts do not retain a visible workspace.
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.bootstrap)api('/bootstrap').catch(()=>{});});
-setInterval(()=>{if(state.bootstrap)api('/bootstrap').catch(()=>{});},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.bootstrap)api('/auth/session').catch(()=>{});});
+setInterval(()=>{if(!document.hidden&&state.bootstrap)api('/auth/session').catch(()=>{});},30000);
 async function adminPage(){
   const data=await api('/admin');if(state.page!=='admin')return;
   $('#page').innerHTML=heading('ACCESS MANAGEMENT','账号与岗位','维护岗位职责与数据范围。授权修改后，受影响账号需要重新登录。','<button class="primary" id="add-user">＋ 新建账号</button>')+

@@ -120,18 +120,60 @@ def command_schema(actor, operation, model):
     return schema
 
 
-def projected_db(source, actor):
+SAFE_FUNCTIONS={'sum','avg','count','min','max','round','coalesce','ifnull','nullif','abs','strftime','date','datetime','substr','substring','length','lower','upper','trim','printf','julianday','total','cast','like','row_number','rank','dense_rank'}
+
+
+def read_authorizer(tables,observed=None,physical_tables=None):
+    physical=set(tables if physical_tables is None else physical_tables)|{'sqlite_master','sqlite_schema','sqlite_temp_master','sqlite_temp_schema'}
+    def authorize(action,a,b,database,trigger):
+        if action in (sqlite3.SQLITE_SELECT,sqlite3.SQLITE_RECURSIVE):
+            return sqlite3.SQLITE_OK
+        if action==sqlite3.SQLITE_READ and a in tables:
+            if observed is not None: observed.add(a)
+            return sqlite3.SQLITE_OK
+        if action==sqlite3.SQLITE_READ and database is None and a not in physical:
+            # SQLite also reports COUNT(*) reads with database=None. Only unknown
+            # physical names can be ephemeral CTEs; real tables still need grants.
+            return sqlite3.SQLITE_OK
+        if action==sqlite3.SQLITE_FUNCTION and (b or '').lower() in SAFE_FUNCTIONS:
+            return sqlite3.SQLITE_OK
+        return sqlite3.SQLITE_DENY
+    return authorize
+
+
+def projected_db(source, actor, queries=None):
     """Only authorized rows/columns exist in the SQL execution database."""
     db = sqlite3.connect(':memory:')
     db.row_factory = sqlite3.Row
     source.execute('BEGIN')
     try:
-        for table, columns in actor['policy']['tables'].items():
+        tables=actor['policy']['tables']
+        for table, columns in tables.items():
             types = {r['name']: r['type'] for r in source.execute(f'PRAGMA table_info({table})')}
             db.execute(f'CREATE TABLE {table} (' + ','.join(f'"{c}" {types[c]}' for c in columns) + ')')
+        required=set(tables) if queries is None else set()
+        if queries is not None:
+            # SQLite compiles SQL against the authorized empty schema. No user SQL is
+            # executed here, and no SQL text parsing/rewrite can weaken row security.
+            db.set_authorizer(read_authorizer(tables,required))
+            try:
+                for sql in queries:
+                    cursor=db.execute('EXPLAIN '+sql)
+                    cursor.close()
+            finally:
+                db.set_authorizer(None)
+        for table in required:
+            columns=tables[table]
             where, args = scoped_where(actor, table)
             cursor = source.execute('SELECT ' + ','.join(f'"{c}"' for c in columns) + f' FROM {table}' + where, args)
             db.executemany(f'INSERT INTO {table} VALUES (' + ','.join('?' for _ in columns) + ')', cursor)
+            # Preserve useful source indexes when all indexed columns are visible.
+            for index in source.execute(f'PRAGMA index_list({table})').fetchall():
+                name=index['name'].replace('"','""')
+                fields=[r['name'] for r in source.execute(f'PRAGMA index_info("{name}")')]
+                if not index['partial'] and fields and all(c in columns for c in fields):
+                    projected_name=('scope_'+index['name']).replace('"','""')
+                    db.execute(f'CREATE INDEX "{projected_name}" ON {table} ('+','.join(f'"{c}"' for c in fields)+')')
         db.commit()
         return db
     except BaseException:

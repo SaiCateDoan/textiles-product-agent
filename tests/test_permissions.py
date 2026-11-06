@@ -222,9 +222,9 @@ def test_dashboard_uses_one_request_and_one_scoped_snapshot(env,monkeypatch,role
     async def track_request(method,path,body=None):
         calls.append(path)
         return await original_request(method,path,body)
-    def track_projection(source,actor):
+    def track_projection(source,actor,queries=None):
         snapshots.append(actor['id'])
-        return original_projection(source,actor)
+        return original_projection(source,actor,queries)
     monkeypatch.setattr(erp,'request',track_request)
     monkeypatch.setattr(domain,'projected_db',track_projection)
     response=client.get('/api/dashboard')

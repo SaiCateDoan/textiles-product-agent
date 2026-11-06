@@ -1,0 +1,149 @@
+{
+  "database_before": {
+    "dataset": {
+      "extra_orders": 50000,
+      "audit_rows": 30000,
+      "events": 100000
+    },
+    "metrics": {
+      "small_product_query": {
+        "samples_ms": [
+          443.78,
+          409.37,
+          358.0
+        ],
+        "median_ms": 409.37,
+        "copied_rows_per_request": 80086
+      },
+      "event_page": {
+        "samples_ms": [
+          10.56,
+          11.72,
+          8.46
+        ],
+        "median_ms": 10.56
+      }
+    },
+    "event_query_plan": [
+      "SEARCH events USING INTEGER PRIMARY KEY (rowid>?)"
+    ]
+  },
+  "database_after": {
+    "dataset": {
+      "extra_orders": 50000,
+      "audit_rows": 30000,
+      "events": 100000
+    },
+    "metrics": {
+      "small_product_query": {
+        "samples_ms": [
+          3.24,
+          2.81,
+          3.04
+        ],
+        "median_ms": 3.04,
+        "copied_rows_per_request": 3
+      },
+      "event_page": {
+        "samples_ms": [
+          3.94,
+          3.27,
+          2.64
+        ],
+        "median_ms": 3.27
+      }
+    },
+    "event_query_plan": [
+      "SEARCH events USING INDEX events_run_id (run_id=? AND id>?)"
+    ]
+  },
+  "frontend_before": {
+    "rows": 500,
+    "cells": 10000,
+    "samples_ms": [
+      57.96,
+      61.27,
+      61.32
+    ],
+    "large_grid": "Maximum call stack size exceeded"
+  },
+  "frontend_after": {
+    "rows": 500,
+    "cells": 10000,
+    "samples_ms": [
+      3.08,
+      1.19,
+      1.96
+    ],
+    "large_grid": "维度组合超过10000个单元格，请先筛选数据、合并分组或使用柱状图"
+  },
+  "baseline_commit": "ae88551",
+  "method": "Three samples per scenario; disposable SQLite databases for scale checks; JSDOM pure chart option construction, not browser painting.",
+  "validation": {
+    "backend_tests_passed": 60,
+    "frontend_tests_passed": 18,
+    "real_ai_business_checks_passed": 47,
+    "real_ai_role_checks_passed": 16
+  },
+  "live_dashboard_after": {
+    "recorded_at": "2026-11-06T07:52:45.819710+00:00",
+    "platform": "Windows",
+    "samples_per_metric": 3,
+    "roles": {
+      "admin": {
+        "http_query": {
+          "samples_ms": [
+            21.61,
+            17.38,
+            24.33
+          ],
+          "median_ms": 21.61
+        },
+        "dashboard": {
+          "samples_ms": [
+            23.7,
+            21.49,
+            23.57
+          ],
+          "median_ms": 23.57
+        }
+      },
+      "sales": {
+        "http_query": {
+          "samples_ms": [
+            19.38,
+            22.04,
+            18.01
+          ],
+          "median_ms": 19.38
+        },
+        "dashboard": {
+          "samples_ms": [
+            20.86,
+            20.76,
+            19.84
+          ],
+          "median_ms": 20.76
+        }
+      },
+      "production": {
+        "http_query": {
+          "samples_ms": [
+            17.86,
+            18.01,
+            17.02
+          ],
+          "median_ms": 17.86
+        },
+        "dashboard": {
+          "samples_ms": [
+            19.93,
+            23.14,
+            19.92
+          ],
+          "median_ms": 19.93
+        }
+      }
+    }
+  }
+}

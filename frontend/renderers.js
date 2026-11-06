@@ -27,7 +27,7 @@
       const body=message.body || message;
       if(body.role==='assistant')for(const call of body.tool_calls || [])calls.set(call.id,call.function?.name);
       if(['user','assistant'].includes(body.role)&&body.content)entries.push({kind:'message',role:body.role,text:body.content});
-      if(body.role!=='tool'||calls.get(body.tool_call_id)!=='create_report')continue;
+      if(body.role!=='tool'||(message.tool_name || calls.get(body.tool_call_id))!=='create_report')continue;
       try{
         const output=JSON.parse(body.content),report=output.result;
         if(output.ok&&report?.id&&Array.isArray(report.data?.rows)&&!reports.has(report.id)){entries.push({kind:'report',report});reports.add(report.id);}
@@ -62,7 +62,10 @@
     if(type==='pivot'||type==='heatmap'){
       if(!columns.includes(group))throw new Error('请选择有效的分组列');
       const xs=[...new Set(data.map(r=>String(r[x])))],gs=[...new Set(data.map(r=>String(r[group])))];
-      const sum=(xx,gg)=>data.filter(r=>String(r[x])===xx&&String(r[group])===gg).reduce((n,r)=>n+r[y[0]],0);
+      if(xs.length*gs.length>10000)throw new Error('维度组合超过10000个单元格，请先筛选数据、合并分组或使用柱状图');
+      const totals=new Map();
+      for(const row of data){const xx=String(row[x]),gg=String(row[group]);if(!totals.has(xx))totals.set(xx,new Map());const groups=totals.get(xx);groups.set(gg,(groups.get(gg)||0)+row[y[0]]);}
+      const sum=(xx,gg)=>totals.get(xx)?.get(gg)||0;
       if(type==='pivot')return {kind:'table',columns:['维度',...gs.map(g=>'分组 · '+g)],rows:xs.map(xx=>Object.fromEntries([['维度',xx],...gs.map(g=>['分组 · '+g,sum(xx,g)])]))};
       const values=xs.flatMap((xx,i)=>gs.map((gg,j)=>[i,j,sum(xx,gg)]));option.xAxis.data=xs;option.yAxis={type:'category',data:gs};option.tooltip={position:'top',renderMode:'richText'};option.visualMap={min:Math.min(0,...values.map(v=>v[2])),max:Math.max(1,...values.map(v=>v[2])),calculable:true,orient:'horizontal',left:'center',bottom:0,inRange:{color:['#edf4df','#2e7553']}};option.series=[{name:y[0],type:'heatmap',data:values,label:{show:true}}];delete option.legend;
     }else if(type==='pie'){

@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from .auth import artifact_owner
+import asyncio
 import json
 import math
 from typing import Literal
@@ -24,7 +25,7 @@ class ReportSpec(StrictModel):
 
 
 async def create_report(spec:ReportSpec):
-    owner, tag = artifact_owner()
+    owner, tag = await asyncio.to_thread(artifact_owner)
     if spec.sql:
         data=await erp.query(spec.sql)
     else:
@@ -32,6 +33,10 @@ async def create_report(spec:ReportSpec):
         if any(set(row)!=set(columns) for row in spec.rows):
             raise ValueError('每行必须使用相同列名')
         data={'columns':columns,'rows':spec.rows,'as_of':now(),'source':'手工编辑数据','truncated':False}
+    return await asyncio.to_thread(save_report,spec,data,owner,tag)
+
+
+def save_report(spec,data,owner,tag):
     if len(data['columns'])>50:
         raise ValueError('报表最多支持50列')
     for row in data['rows']:
@@ -51,9 +56,12 @@ async def create_report(spec:ReportSpec):
     identity=uid('RPT')
     body=spec.model_dump(exclude={'rows','sql'})
     stamp=now()
+    encoded=json.dumps(data,ensure_ascii=False)
+    if len(encoded.encode('utf-8'))>4_000_000:
+        raise ValueError('报表数据超过4MB，请缩小范围或先聚合数据')
     if artifact_owner() != (owner,tag): raise HTTPException(401,'会话已失效')
     with transaction('agent') as db:
-        db.execute('INSERT INTO reports(id,title,chart_type,spec,data,sql,created_at,owner_id,access_tag) VALUES(?,?,?,?,?,?,?,?,?)',(identity,spec.title,spec.chart_type,json.dumps(body,ensure_ascii=False),json.dumps(data,ensure_ascii=False),spec.sql,stamp,owner,tag))
+        db.execute('INSERT INTO reports(id,title,chart_type,spec,data,sql,created_at,owner_id,access_tag) VALUES(?,?,?,?,?,?,?,?,?)',(identity,spec.title,spec.chart_type,json.dumps(body,ensure_ascii=False),encoded,spec.sql,stamp,owner,tag))
     return {'id':identity,**body,'data':data,'sql':spec.sql,'created_at':stamp}
 
 

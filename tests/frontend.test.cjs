@@ -164,3 +164,50 @@ test('Login gates workspace and sales UI hides unauthorized features; logout cle
   assert.equal(d.querySelector('#identity').textContent,'');
   dom.window.close();
 });
+
+test('Pivot and heatmap aggregate duplicates in one pass and reject oversized grids',()=>{
+  const dom=environment(),ui=dom.window.DemoUI;
+  const r={chart_type:'pivot',x:'x',y:['n'],group:'g',data:{columns:['x','g','n'],rows:[{x:'A',g:'one',n:2},{x:'A',g:'one',n:3},{x:'B',g:'two',n:4}]}};
+  const pivot=ui.reportView(r);
+  assert.equal(pivot.rows[0]['分组 · one'],5);assert.equal(pivot.rows[0]['分组 · two'],0);
+  const heat=ui.reportView({...r,chart_type:'heatmap'});
+  assert.deepEqual(Array.from(heat.option.series[0].data,x=>Array.from(x)),[[0,0,5],[0,1,0],[1,0,0],[1,1,4]]);
+  r.data.rows=Array.from({length:500},(_,i)=>({x:i,g:i,n:1}));
+  for(const type of ['pivot','heatmap'])assert.throws(()=>ui.reportView({...r,chart_type:type}),/10000/);
+  dom.window.close();
+});
+
+test('Paged tool results retain report rendering when their tool call is on an older page',()=>{
+  const dom=environment(),r=report();
+  const messages=[{tool_name:'create_report',body:{role:'tool',tool_call_id:'older-call',content:JSON.stringify({ok:true,result:r})}}];
+  assert.equal(dom.window.DemoUI.chatEntries(messages)[0].report.id,r.id);dom.window.close();
+});
+
+test('Report editor renders 50 rows per page and trace JSON renders only on expansion',()=>{
+  const dom=environment(source('index.html')),w=dom.window,d=w.document;
+  w.eval(source('app.js').replace(/boot\(\);\s*$/,'')+'\nwindow.perfUI={renderEvent,setRows(rows){reportDraft.rows=rows;reportColumns=["x","n"];renderGrid();},getRows(){return reportDraft.rows;}};');
+  d.querySelector('#page').innerHTML='<div id="editable-data"></div><div id="trace-list"></div>';
+  w.perfUI.setRows(Array.from({length:500},(_,i)=>({x:'row '+i,n:i})));
+  assert.equal(d.querySelectorAll('#editable-data input').length,100);
+  d.querySelector('#grid-next').click();
+  const cell=d.querySelector('input[data-row="50"][data-col="1"]');cell.value='999';cell.dispatchEvent(new w.Event('change'));
+  assert.equal(w.perfUI.getRows()[50].n,999);assert.equal(w.perfUI.getRows()[0].n,0);
+  w.perfUI.renderEvent({id:1,kind:'tool_result',payload:{name:'query_data',ok:true,result:{rows:Array.from({length:500},(_,i)=>({value:i}))}}});
+  const details=d.querySelector('details'),pre=details.querySelector('pre');
+  assert.equal(pre.textContent,'');details.open=true;details.dispatchEvent(new w.Event('toggle'));
+  assert.match(pre.textContent,/499/);dom.window.close();
+});
+
+test('Chat charts render on visibility and pending charts are released on navigation',()=>{
+  const dom=environment(source('index.html')),w=dom.window,d=w.document;
+  let observer;const observed=new Set(),instances=new Map();
+  w.IntersectionObserver=class{constructor(callback){observer=this;this.callback=callback;}observe(n){observed.add(n);}unobserve(n){observed.delete(n);}};
+  w.echarts={getInstanceByDom:n=>instances.get(n),init:n=>{const c={setOption(){},getDom(){return n;},isDisposed(){return false;},dispose(){instances.delete(n);},resize(){}};instances.set(n,c);return c;}};
+  w.eval(source('app.js').replace(/boot\(\);\s*$/,'')+'\nwindow.perfUI={appendChatReport,disposeCharts};');
+  d.querySelector('#page').innerHTML='<div id="chat-messages"></div>';
+  w.perfUI.appendChatReport(report('bar','lazy-one'));w.perfUI.appendChatReport(report('bar','lazy-two'));
+  assert.equal(instances.size,0);assert.equal(observed.size,2);
+  const card=d.querySelector('[data-report-card="lazy-one"]');observer.callback([{target:card,isIntersecting:true}]);
+  assert.equal(instances.size,1);assert.equal(observed.size,1);
+  w.perfUI.disposeCharts();assert.equal(instances.size,0);assert.equal(observed.size,0);dom.window.close();
+});

@@ -85,7 +85,7 @@ def main():
                 conversation['events'].append(event)
                 if event['kind']=='tool_result':
                     print('  TOOL '+event['payload']['name']+' '+str(event['payload']['ok']),flush=True)
-            if data['status']!='running':
+            if data['status']!='running' and not data.get('has_more'):
                 conversation.update({'status':data['status'],'usage':data['usage'],'elapsed_seconds':round(time.monotonic()-start,2)})
                 save()
                 check(name+' completed with real AI',data['status']=='completed',data.get('error'))

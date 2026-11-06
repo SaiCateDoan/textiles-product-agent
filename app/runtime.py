@@ -14,6 +14,21 @@ from .skills import list_skills,get_skill,validate_inputs
 from .reports import ReportSpec,create_report
 
 
+_model_client=None
+
+
+async def start_model_client():
+    global _model_client
+    if _model_client is None:
+        _model_client=httpx.AsyncClient(timeout=httpx.Timeout(100,connect=15),limits=httpx.Limits(max_connections=8,max_keepalive_connections=8))
+
+
+async def close_model_client():
+    global _model_client
+    client,_model_client=_model_client,None
+    if client is not None: await client.aclose()
+
+
 SYSTEM = '''你是“织序”纺织工厂业务Agent。你必须使用真实工具读取系统数据与执行业务，中文回答。
 ERP和MES是同一个业务系统。工具反馈是事实来源，不得虚构单号、库存、统计或执行成功。
 先按需获取数据目录，再使用只读SQL自由分析；查询最多500行，统计尽量在SQL中聚合。
@@ -64,17 +79,17 @@ def event(run_id,kind,payload):
 
 
 async def invoke(name,args,request_id):
-    actor=current_actor()
+    actor=await asyncio.to_thread(current_actor)
     if name=='get_catalog':
         return await erp.catalog()
     if name=='query_data':
         return await erp.query(args['sql'])
     if name=='list_skills':
-        return [{k:s[k] for k in ('id','name','description')} for s in list_skills() if s['enabled']]
+        return [{k:s[k] for k in ('id','name','description')} for s in await asyncio.to_thread(list_skills) if s['enabled']]
     if name=='read_skill':
-        return get_skill(args['skill_id'])
+        return await asyncio.to_thread(get_skill,args['skill_id'])
     if name=='run_skill':
-        skill=get_skill(args['skill_id'])
+        skill=await asyncio.to_thread(get_skill,args['skill_id'])
         if not skill['steps']:
             return {'instructions':skill['instructions'],'message':'该技能是分析指南，请按指令调用查询和报表工具。'}
         inputs=validate_inputs(skill,args['inputs'])
@@ -94,45 +109,49 @@ async def model_call(messages):
     key=os.getenv('DEEPSEEK_API_KEY','')
     if not key:
         raise ValueError('未配置DEEPSEEK_API_KEY；请设置环境变量后重启Demo')
-    async with httpx.AsyncClient(timeout=httpx.Timeout(100,connect=15)) as client:
-        for attempt in range(3):
-            try:
-                response=await client.post(DEEPSEEK_URL+'/chat/completions',headers={'Authorization':'Bearer '+key},json={'model':MODEL,'messages':messages,'tools':tool_definitions(),'temperature':0.15,'max_tokens':4096,'thinking':{'type':'disabled'}})
-            except httpx.RequestError as exc:
-                if attempt<2:
-                    await asyncio.sleep(2**attempt)
-                    continue
-                raise ValueError('DeepSeek网络请求失败，请检查网络连接') from exc
-            if response.status_code in (429,500,502,503,504) and attempt<2:
+    if _model_client is None: raise ValueError('模型客户端尚未启动')
+    for attempt in range(3):
+        try:
+            payload=await asyncio.to_thread(model_payload,messages)
+            response=await _model_client.post(DEEPSEEK_URL+'/chat/completions',headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},content=payload)
+        except httpx.RequestError as exc:
+            if attempt<2:
                 await asyncio.sleep(2**attempt)
                 continue
-            if response.is_error:
-                raise ValueError(f'DeepSeek返回HTTP {response.status_code}；请检查模型名、密钥余额或服务状态')
-            return response.json()
+            raise ValueError('DeepSeek网络请求失败，请检查网络连接') from exc
+        if response.status_code in (429,500,502,503,504) and attempt<2:
+            await asyncio.sleep(2**attempt)
+            continue
+        if response.is_error:
+            raise ValueError(f'DeepSeek返回HTTP {response.status_code}；请检查模型名、密钥余额或服务状态')
+        return response.json()
+
+
+def model_payload(messages):
+    payload=json.dumps({'model':MODEL,'messages':messages,'tools':tool_definitions(),'temperature':0.15,'max_tokens':4096,'thinking':{'type':'disabled'}},ensure_ascii=False)
+    if len(payload)>250000:
+        raise ValueError('工具结果或历史超过上下文预算，请缩小数据范围、优先使用SQL聚合，并新建会话继续')
+    return payload.encode('utf-8')
 
 
 async def run_agent(run_id,session_id):
     usage={'prompt_tokens':0,'completion_tokens':0,'model':MODEL,'model_calls':0}
     started=time.monotonic()
     try:
-        db=connect('agent')
-        try:
-            ensure_session(db,session_id)
-            history=[json.loads(r['content']) for r in db.execute('SELECT content FROM messages WHERE session_id=? ORDER BY id',(session_id,))]
-        finally:
-            db.close()
-        # Do not slice individual tool messages: provider requires complete call/result pairs.
-        if len(json.dumps(history,ensure_ascii=False))>220000:
-            raise ValueError('当前会话较长，请新建会话继续，历史记录会保留')
-        skills=[{k:s[k] for k in ('id','name','description')} for s in list_skills() if s['enabled']]
-        messages=[{'role':'system','content':SYSTEM+'\n当前岗位：'+current_actor()['role_name']+'。只使用当前岗位提供的目录和工具；不猜测隐藏功能、表、字段或其他账号的数据。\n中国时区当前时间：'+now()+'\n启用技能：'+json.dumps(skills,ensure_ascii=False)}]+history
+        history=await asyncio.to_thread(load_history,session_id)
+        skills=[{k:s[k] for k in ('id','name','description')} for s in await asyncio.to_thread(list_skills) if s['enabled']]
+        actor=await asyncio.to_thread(current_actor)
+        messages=[{'role':'system','content':SYSTEM+'\n当前岗位：'+actor['role_name']+'。只使用当前岗位提供的目录和工具；不猜测隐藏功能、表、字段或其他账号的数据。\n中国时区当前时间：'+now()+'\n启用技能：'+json.dumps(skills,ensure_ascii=False)}]+history
         for turn in range(18):
-            current_actor()
+            await asyncio.to_thread(current_actor)
             if time.monotonic()-started>480:
                 raise ValueError('本轮执行达到8分钟上限，请查看已完成工具记录后继续')
-            event(run_id,'status',{'message':f'模型正在处理 · 第{turn+1}轮'})
-            response=await model_call(messages)
-            current_actor()
+            await asyncio.to_thread(event,run_id,'status',{'message':f'模型正在处理 · 第{turn+1}轮'})
+            try:
+                response=await asyncio.wait_for(model_call(messages),timeout=max(1,480-(time.monotonic()-started)))
+            except asyncio.TimeoutError as exc:
+                raise ValueError('模型等待达到本轮时间预算，请查看已完成的工具记录后继续') from exc
+            await asyncio.to_thread(current_actor)
             usage['model_calls']+=1
             for key in ('prompt_tokens','completion_tokens'):
                 usage[key]+=response.get('usage',{}).get(key,0)
@@ -144,45 +163,60 @@ async def run_agent(run_id,session_id):
             calls=message.get('tool_calls') or []
             if calls:
                 clean['tool_calls']=calls
-            save_message(session_id,clean)
+            await asyncio.to_thread(save_message,session_id,clean)
             messages.append(clean)
             if not calls:
                 if not clean['content']:
                     raise ValueError('模型未返回可用答复')
-                event(run_id,'answer',{'content':clean['content']})
-                with transaction('agent') as db:
-                    db.execute("UPDATE runs SET status='completed',usage=? WHERE id=?",(json.dumps(usage),run_id))
+                await asyncio.to_thread(event,run_id,'answer',{'content':clean['content']})
+                await asyncio.to_thread(finish_run,run_id,'completed',usage,None)
                 return
             for call in calls:
-                current_actor()
+                await asyncio.to_thread(current_actor)
                 name=call['function']['name']
                 args={}
                 try:
                     args=json.loads(call['function']['arguments'])
-                    event(run_id,'tool_start',{'name':name,'arguments':args,'call_id':call['id']})
+                    await asyncio.to_thread(event,run_id,'tool_start',{'name':name,'arguments':args,'call_id':call['id']})
                     result=await invoke(name,args,run_id+':'+call['id'])
                     output={'ok':True,'result':result}
                 except Exception as exc:
                     output={'ok':False,'error':str(exc)[:1800]}
-                event(run_id,'tool_result',{'name':name,'call_id':call['id'],**output})
+                await asyncio.to_thread(event,run_id,'tool_result',{'name':name,'call_id':call['id'],**output})
                 tool_message={'role':'tool','tool_call_id':call['id'],'content':json.dumps(output,ensure_ascii=False)}
-                save_message(session_id,tool_message)
+                await asyncio.to_thread(save_message,session_id,tool_message)
                 messages.append(tool_message)
         raise ValueError('已达到18轮工具上限，请查看执行记录后继续')
     except Exception as exc:
         error=str(exc)[:1800]
-        event(run_id,'error',{'message':error})
-        with transaction('agent') as db:
-            db.execute("UPDATE runs SET status='failed',error=?,usage=? WHERE id=?",(error,json.dumps(usage),run_id))
-        # Complete dangling provider tool calls after interruptions to keep continuation valid.
-        db=connect('agent')
-        try:
-            hist=[json.loads(r['content']) for r in db.execute('SELECT content FROM messages WHERE session_id=? ORDER BY id',(session_id,))]
-        finally:
-            db.close()
-        answered={m['tool_call_id'] for m in hist if m['role']=='tool'}
-        for m in hist:
-            for call in m.get('tool_calls',[]):
-                if call['id'] not in answered:
-                    save_message(session_id,{'role':'tool','tool_call_id':call['id'],'content':'执行中断，结果未知，请查询业务审计核对后再操作。'})
-        save_message(session_id,{'role':'assistant','content':'本次执行未完成：'+error+'。已成功的业务操作不会自动撤销，请查看工具记录。'})
+        await asyncio.to_thread(event,run_id,'error',{'message':error})
+        await asyncio.to_thread(finish_run,run_id,'failed',usage,error)
+        await asyncio.to_thread(repair_failure,session_id,error)
+
+
+def load_history(session_id):
+    db=connect('agent')
+    try:
+        ensure_session(db,session_id)
+        size=db.execute('SELECT COALESCE(SUM(length(content)),0)+2*COUNT(*)+2 FROM messages WHERE session_id=?',(session_id,)).fetchone()[0]
+        if size>220000: raise ValueError('当前会话较长，请新建会话继续，历史记录会保留')
+        return [json.loads(r['content']) for r in db.execute('SELECT content FROM messages WHERE session_id=? ORDER BY id',(session_id,))]
+    finally:db.close()
+
+
+def finish_run(run_id,status,usage,error):
+    with transaction('agent') as db:
+        db.execute('UPDATE runs SET status=?,error=?,usage=? WHERE id=?',(status,error,json.dumps(usage),run_id))
+
+
+def repair_failure(session_id,error):
+    db=connect('agent')
+    try:
+        history=[json.loads(r['content']) for r in db.execute("SELECT content FROM messages WHERE session_id=? AND id>=COALESCE((SELECT MAX(id) FROM messages WHERE session_id=? AND role='user'),0) ORDER BY id",(session_id,session_id))]
+    finally:db.close()
+    answered={m['tool_call_id'] for m in history if m['role']=='tool'}
+    for m in history:
+        for call in m.get('tool_calls',[]):
+            if call['id'] not in answered:
+                save_message(session_id,{'role':'tool','tool_call_id':call['id'],'content':'执行中断，结果未知，请查询业务审计核对后再操作。'})
+    save_message(session_id,{'role':'assistant','content':'本次执行未完成：'+error+'。已成功的业务操作不会自动撤销，请查看工具记录。'})

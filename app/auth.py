@@ -28,6 +28,12 @@ def init_auth():
         CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,name TEXT NOT NULL,password_hash TEXT NOT NULL,role_id TEXT NOT NULL REFERENCES roles(id),customer_ids TEXT NOT NULL DEFAULT '[]',active INTEGER NOT NULL DEFAULT 1);
         CREATE TABLE IF NOT EXISTS auth_sessions(token_hash TEXT PRIMARY KEY,user_id TEXT REFERENCES users(id),csrf TEXT NOT NULL,expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS login_attempts(username TEXT NOT NULL,ip TEXT NOT NULL,created REAL NOT NULL);
+        CREATE INDEX IF NOT EXISTS auth_sessions_user ON auth_sessions(user_id);
+        CREATE INDEX IF NOT EXISTS auth_sessions_expiry ON auth_sessions(expires);
+        CREATE INDEX IF NOT EXISTS users_role_active ON users(role_id,active);
+        CREATE INDEX IF NOT EXISTS login_attempts_user ON login_attempts(username);
+        CREATE INDEX IF NOT EXISTS login_attempts_ip ON login_attempts(ip);
+        CREATE INDEX IF NOT EXISTS login_attempts_time ON login_attempts(created);
         ''')
         for key, (name, policy) in DEFAULT_ROLES.items():
             db.execute('INSERT OR IGNORE INTO roles VALUES(?,?,?)', (key, name, json.dumps(policy)))
@@ -48,6 +54,7 @@ def init_auth():
                 grants = json.loads(db.execute("SELECT policy FROM roles WHERE id='admin'").fetchone()[0])
                 user = dict(admin); user['customer_ids'] = json.loads(user['customer_ids'])
                 db.execute(f"UPDATE {table} SET owner_id='admin',access_tag=? WHERE owner_id=''", (access_tag(user, grants),))
+            db.execute(f'CREATE INDEX IF NOT EXISTS {table}_owner_created ON {table}(owner_id,access_tag,created_at DESC,id)')
     if credentials:
         path = database.DATA / 'demo-accounts.json'
         path.write_text(json.dumps(credentials, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -83,23 +90,31 @@ def token_digest(token):
 def login(username, password, ip):
     username = username.strip().lower()
     timestamp = time.time()
-    denied = False
+    # Password verification is deliberately expensive; do not hold SQLite's
+    # single writer lock while scrypt runs. Recheck credentials under the lock.
+    db=database.connect('agent')
+    try:
+        count=db.execute('SELECT COUNT(*) FROM login_attempts WHERE created>? AND (username=? OR ip=?)',(timestamp-300,username,ip)).fetchone()[0]
+        if count>=10: raise HTTPException(429,'尝试次数过多，请5分钟后重试')
+        candidate=db.execute('SELECT password_hash FROM users WHERE username=?',(username,)).fetchone()
+    finally:db.close()
+    stored=candidate['password_hash'] if candidate else None
+    computed=password_hash(password,stored.split(':')[0] if stored else '0'*32)
+    valid=stored is not None and hmac.compare_digest(stored,computed)
+    denied=False
     with database.transaction('agent') as db:
-        db.execute('DELETE FROM login_attempts WHERE created<?', (timestamp-300,))
-        count = db.execute('SELECT COUNT(*) FROM login_attempts WHERE username=? OR ip=?', (username, ip)).fetchone()[0]
-        if count >= 10:
-            raise HTTPException(429, '尝试次数过多，请5分钟后重试')
-        user = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
-        stored = user['password_hash'] if user else password_hash('dummy-account')
-        valid = hmac.compare_digest(stored, password_hash(password, stored.split(':')[0]))
-        if not user or not valid or not user['active']:
-            db.execute('INSERT INTO login_attempts VALUES(?,?,?)', (username, ip, timestamp))
-            denied = True
+        db.execute('DELETE FROM login_attempts WHERE created<?',(timestamp-300,))
+        count=db.execute('SELECT COUNT(*) FROM login_attempts WHERE username=? OR ip=?',(username,ip)).fetchone()[0]
+        if count>=10: raise HTTPException(429,'尝试次数过多，请5分钟后重试')
+        user=db.execute('SELECT * FROM users WHERE username=?',(username,)).fetchone()
+        if not user or not valid or not user['active'] or user['password_hash']!=stored:
+            db.execute('INSERT INTO login_attempts VALUES(?,?,?)',(username,ip,timestamp))
+            denied=True
         else:
-            db.execute('DELETE FROM login_attempts WHERE username=?', (username,))
-            db.execute('DELETE FROM auth_sessions WHERE expires<?', (timestamp,))
-            token = secrets.token_urlsafe(32)
-            db.execute('INSERT INTO auth_sessions VALUES(?,?,?,?)', (token_digest(token), user['id'], secrets.token_urlsafe(32), timestamp+TTL))
+            db.execute('DELETE FROM login_attempts WHERE username=?',(username,))
+            db.execute('DELETE FROM auth_sessions WHERE expires<?',(timestamp,))
+            token=secrets.token_urlsafe(32)
+            db.execute('INSERT INTO auth_sessions VALUES(?,?,?,?)',(token_digest(token),user['id'],secrets.token_urlsafe(32),timestamp+TTL))
     if denied:
         raise HTTPException(401, '账号或密码错误，或账号已停用')
     return token
@@ -154,6 +169,7 @@ def save_user(identity, body):
         raise ValueError('账号范围或启用状态无效')
     if password and (not isinstance(password,str) or not 10 <= len(password) <= 128):
         raise ValueError('密码需要10至128个字符')
+    new_hash=password_hash(password) if password else None
     with database.transaction('agent') as db:
         existing = db.execute('SELECT * FROM users WHERE id=?',(identity,)).fetchone()
         if not db.execute('SELECT 1 FROM roles WHERE id=?',(role,)).fetchone():
@@ -163,7 +179,7 @@ def save_user(identity, body):
                 raise ValueError('必须保留至少一个启用的管理员')
         if not existing and not password:
             raise ValueError('新账号必须设置密码')
-        hashed = password_hash(password) if password else existing['password_hash']
+        hashed = new_hash if new_hash else existing['password_hash']
         try:
             db.execute('INSERT INTO users VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET username=excluded.username,name=excluded.name,password_hash=excluded.password_hash,role_id=excluded.role_id,customer_ids=excluded.customer_ids,active=excluded.active',
                        (identity,username,name,hashed,role,json.dumps(scope),int(active)))

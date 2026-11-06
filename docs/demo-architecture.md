@@ -36,7 +36,7 @@ Agent 的业务读写走 `app/adapter.py` 的 HTTP 适配层，共享 Python 模
 - 请求 ID 与内容指纹校验幂等；同 ID 不同内容拒绝，同 ID 同内容返回原结果。
 - 事务技能所有步骤、库存流水、审计在同一数据库事务提交。
 
-只读 SQL 使用 `query_only`、SQLite VM authorizer、表/函数白名单、单语句和指令预算。拒绝写入、ATTACH、PRAGMA、扩展加载、内部幂等表与系统元数据。最多 500 行，超限标记 `truncated`；SQL 上限 12000 字符。
+只读 SQL 使用 `query_only`、SQLite VM authorizer、表/函数白名单、单语句和指令预算。拒绝写入、ATTACH、PRAGMA、扩展加载、内部幂等表与系统元数据。最多500行、行结果约2MB，超限标记 `truncated`；SQLite单条记录上限1MB、输出列上限200，SQL上限12000字符。SQLite先编译查询识别实际引用的授权表，权限快照只加载这些表；未授权字段和客户范围仍在数据进入查询数据库前过滤。
 
 ## Agent 执行
 
@@ -90,8 +90,8 @@ Agent 的业务读写走 `app/adapter.py` 的 HTTP 适配层，共享 Python 模
 | `POST /api/business/{operation}` | `{ "params": {...}, "request_id": "唯一幂等键" }` |
 | `POST /api/chat` | `{ "message": "...", "session_id": null }` |
 | `GET /api/sessions` | 会话列表 |
-| `GET /api/sessions/{id}` | 历史消息及任务 |
-| `GET /api/runs/{id}?after=0` | 增量事件、任务状态、模型 token 用量 |
+| `GET /api/sessions/{id}?before=消息ID` | 最近200条历史消息，可向前翻页；返回 `has_more/before_id` 和最近20个任务 |
+| `GET /api/runs/{id}?after=0` | 最多200条增量事件、`has_more`、任务状态和模型用量；完成任务也须排空剩余分页 |
 | `GET /api/skills` | 技能完整配置 |
 | `PUT /api/skills/{id}` | 校验并保存完整技能 |
 | `GET /api/reports` | 报表列表 |
@@ -107,3 +107,5 @@ Agent 的业务读写走 `app/adapter.py` 的 HTTP 适配层，共享 Python 模
 `scripts/acceptance.py` 通过 Agent 对话接口调用真实模型，再独立查询实际业务结果。验证图表金额、采购、事务技能、生产/质检/发货/补产、多轮上下文、自定义与禁用技能、8 种报表接口、私有服务认证、完整关闭、重启持久化。原始证据位于 `docs/acceptance-result.json`。
 
 前端按任务约定不做真实浏览器测试。JavaScript 语法、静态资源 HTTP 与后端接口检查已执行，这些不替代真实浏览器视觉和交互回归。
+
+性能资源边界、索引及并发实现见 [性能检查记录](performance-review.md)。

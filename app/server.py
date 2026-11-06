@@ -7,16 +7,16 @@ import os
 import hmac
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI,HTTPException,Request
+from fastapi import FastAPI,HTTPException,Request,Query
 from fastapi.responses import FileResponse,JSONResponse,Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel,Field
-from .config import ROOT,APP_PORT,MODEL
-from .database import init_agent,connect,transaction,now,rows
+from .config import ROOT,APP_PORT,MODEL,MAX_AGENT_RUNS,MAX_USER_RUNS
+from .database import init_agent,connect,transaction,now,rows,payload_page
 from .domain import uid,COMMANDS
 from .adapter import erp,AdapterError
-from .runtime import run_agent
+from .runtime import run_agent,start_model_client,close_model_client
 from .skills import list_skills,save_skill,Skill
 from .reports import ReportSpec,create_report,list_reports,get_report
 
@@ -30,6 +30,7 @@ tasks=set()
 async def lifespan(app):
     init_agent()
     await erp.start()
+    await start_model_client()
     try:
         yield
     finally:
@@ -37,6 +38,7 @@ async def lifespan(app):
             task.cancel()
         if tasks:
             await asyncio.gather(*tasks,return_exceptions=True)
+        await close_model_client()
         await erp.close()
 
 
@@ -54,7 +56,8 @@ async def local_protection(request:Request,call_next):
         context=None
         try:
             if not public:
-                actor=auth.resolve_session(auth.token_digest(request.cookies.get(auth.COOKIE,'')))
+                actor=await asyncio.to_thread(auth.resolve_session,auth.token_digest(request.cookies.get(auth.COOKIE,'')))
+                request.state.actor=actor
                 context=auth.session_context.set(actor['session_hash'])
                 # These headers bind an already-open page to its account; they never establish identity.
                 for header,key in [('x-demo-user','id'),('x-demo-access','access_tag')]:
@@ -109,6 +112,12 @@ def logout(response:Response):
     return {'status':'ok'}
 
 
+@app.get('/api/auth/session')
+def check_login(request:Request):
+    # Middleware has just resolved the current session; no ERP round trip or schemas.
+    return {'token':request.state.actor['csrf']}
+
+
 @app.get('/api/admin')
 def admin_data():
     return auth.admin_data()
@@ -131,7 +140,7 @@ async def bootstrap():
         await erp.request('GET','/health')
     except AdapterError:
         status='unavailable'
-    actor=auth.current_actor()
+    actor=await asyncio.to_thread(auth.current_actor)
     return {'user':auth.public_actor(actor),'access_tag':actor['access_tag'],'token':actor['csrf'],'model':MODEL,'key_configured':bool(os.getenv('DEEPSEEK_API_KEY')),'erp_status':status,'now':now(),'commands':{k:{'description':v[1],'schema':command_schema(actor,k,v[0])} for k,v in COMMANDS.items() if k in actor['policy']['commands']}}
 
 
@@ -161,7 +170,7 @@ class CommandBody(BaseModel):
 
 @app.post('/api/business/{operation}')
 async def business(operation:str,body:CommandBody):
-    require_command(auth.current_actor(),operation)
+    require_command(await asyncio.to_thread(auth.current_actor),operation)
     if operation not in COMMANDS:
         raise HTTPException(404,'未注册业务操作')
     params=COMMANDS[operation][0].model_validate(body.params).model_dump(mode='json',exclude_none=True)
@@ -185,6 +194,15 @@ async def chat(body:ChatBody):
         raise HTTPException(422,'消息不能为空')
     session_id=body.session_id or uid('CHAT')
     run_id=uid('RUN')
+    await asyncio.to_thread(create_chat_run,body,session_id,run_id)
+    task=asyncio.create_task(run_agent(run_id,session_id))
+    tasks.add(task)
+    task.add_done_callback(tasks.discard)
+    return {'session_id':session_id,'run_id':run_id}
+
+
+def create_chat_run(body,session_id,run_id):
+    owner,tag=auth.artifact_owner()
     with transaction('agent') as db:
         if body.session_id: auth.ensure_session(db,session_id)
         existing=db.execute('SELECT id FROM sessions WHERE id=?',(session_id,)).fetchone()
@@ -192,14 +210,13 @@ async def chat(body:ChatBody):
             raise HTTPException(404,'会话不存在')
         if db.execute("SELECT 1 FROM runs WHERE session_id=? AND status='running'",(session_id,)).fetchone():
             raise HTTPException(409,'该会话仍有任务执行中')
+        running=rows(db,"SELECT s.owner_id,COUNT(*) n FROM runs r JOIN sessions s ON s.id=r.session_id WHERE r.status='running' GROUP BY s.owner_id")
+        if sum(r['n'] for r in running)>=MAX_AGENT_RUNS or sum(r['n'] for r in running if r['owner_id']==owner)>=MAX_USER_RUNS:
+            raise HTTPException(429,'正在处理的任务较多，请等待已有任务完成后重试',headers={'Retry-After':'5'})
         if not existing:
-            db.execute('INSERT INTO sessions(id,title,created_at,owner_id,access_tag) VALUES(?,?,?,?,?)',(session_id,body.message[:45],now(),*auth.artifact_owner()))
+            db.execute('INSERT INTO sessions(id,title,created_at,owner_id,access_tag) VALUES(?,?,?,?,?)',(session_id,body.message[:45],now(),owner,tag))
         db.execute('INSERT INTO runs(id,session_id,status,created_at) VALUES(?,?,?,?)',(run_id,session_id,'running',now()))
         db.execute('INSERT INTO messages(session_id,role,content,created_at) VALUES(?,?,?,?)',(session_id,'user',json.dumps({'role':'user','content':body.message},ensure_ascii=False),now()))
-    task=asyncio.create_task(run_agent(run_id,session_id))
-    tasks.add(task)
-    task.add_done_callback(tasks.discard)
-    return {'session_id':session_id,'run_id':run_id}
 
 
 @app.get('/api/sessions')
@@ -212,20 +229,30 @@ def sessions():
 
 
 @app.get('/api/sessions/{identity}')
-def session(identity:str):
+def session(identity:str,before:int=Query(default=9223372036854775807,gt=0)):
     db=connect('agent')
     try:
         auth.ensure_session(db,identity)
-        messages=rows(db,'SELECT * FROM messages WHERE session_id=? ORDER BY id',(identity,))
+        page,has_more=payload_page(db,'SELECT * FROM messages WHERE session_id=? AND id<? ORDER BY id DESC LIMIT 201',(identity,before),'content')
+        messages=list(reversed(page))
+        calls={}
+        if messages:
+            prior=db.execute("SELECT content FROM messages WHERE session_id=? AND role='assistant' AND id<? ORDER BY id DESC LIMIT 1",(identity,messages[0]['id'])).fetchone()
+            if prior:
+                calls.update({c['id']:c['function']['name'] for c in json.loads(prior['content']).get('tool_calls',[])})
         for message in messages:
             message['body']=json.loads(message.pop('content'))
-        return {'messages':messages,'runs':rows(db,'SELECT * FROM runs WHERE session_id=? ORDER BY created_at',(identity,))}
+            body=message['body']
+            calls.update({c['id']:c['function']['name'] for c in body.get('tool_calls',[])})
+            if body['role']=='tool': message['tool_name']=calls.get(body['tool_call_id'])
+        recent=rows(db,'SELECT * FROM runs WHERE session_id=? ORDER BY created_at DESC,id DESC LIMIT 20',(identity,))
+        return {'messages':messages,'runs':list(reversed(recent)),'has_more':has_more,'before_id':messages[0]['id'] if messages else None}
     finally:
         db.close()
 
 
 @app.get('/api/runs/{identity}')
-def run(identity:str,after:int=0):
+def run(identity:str,after:int=Query(default=0,ge=0)):
     db=connect('agent')
     try:
         row=db.execute('SELECT * FROM runs WHERE id=?',(identity,)).fetchone()
@@ -234,7 +261,9 @@ def run(identity:str,after:int=0):
         auth.ensure_session(db,row['session_id'])
         result=dict(row)
         result['usage']=json.loads(result['usage'])
-        result['events']=rows(db,'SELECT * FROM events WHERE run_id=? AND id>? ORDER BY id',(identity,after))
+        page,has_more=payload_page(db,'SELECT * FROM events WHERE run_id=? AND id>? ORDER BY id LIMIT 201',(identity,after),'payload')
+        result['events']=page
+        result['has_more']=has_more
         for e in result['events']:
             e['payload']=json.loads(e['payload'])
         return result
@@ -285,7 +314,7 @@ def report_csv(identity:str):
 
 @app.post('/api/shutdown')
 async def shutdown():
-    auth.require_admin()
+    await asyncio.to_thread(auth.require_admin)
     path=os.getenv('DEMO_SHUTDOWN_FILE')
     if not path:
         raise HTTPException(409,'请使用一键启动器启动，才能关闭整个Demo')

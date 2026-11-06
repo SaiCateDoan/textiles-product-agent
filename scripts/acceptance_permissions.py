@@ -52,10 +52,15 @@ def main():
             def chat(role,prompt):
                 start=client.post('/api/chat',json={'message':prompt});start.raise_for_status()
                 ids=start.json();print('CHAT '+role,flush=True)
+                events=[];after=0
                 for _ in range(480):
-                    run=client.get('/api/runs/'+ids['run_id']);run.raise_for_status();run=run.json()
-                    if run['status']!='running':break
+                    run=client.get('/api/runs/'+ids['run_id']+'?after='+str(after));run.raise_for_status();run=run.json()
+                    events.extend(run['events'])
+                    if run['events']: after=run['events'][-1]['id']
+                    if run['status']!='running' and not run.get('has_more'):break
+                    if run.get('has_more'):continue
                     time.sleep(1)
+                run['events']=events
                 evidence['conversations'].append({'role':role,'prompt':prompt,**ids,**run})
                 save();check(role+' real AI completed',run['status']=='completed')
                 check(role+' real model usage',run['usage'].get('model_calls',0)>0 and run['usage'].get('prompt_tokens',0)>0)

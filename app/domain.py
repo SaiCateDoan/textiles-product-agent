@@ -1,4 +1,4 @@
-from .permissions import require_command, check_target, project_result, projected_db
+from .permissions import require_command, check_target, project_result, projected_db, read_authorizer
 """ERP/MES invariants live here, never in model prompts or the adapter."""
 import hashlib
 import json
@@ -269,15 +269,21 @@ def catalog(actor=None):
         db.close()
 
 
-def _read_connection(actor):
+def _read_connection(actor,queries):
+    for sql in queries:
+        if not isinstance(sql,str) or len(sql)>12000:
+            raise BusinessError('查询语句过长或格式错误')
     db=connect()
-    if actor: db=projected_db(db,actor)
+    try:
+        if actor: db=projected_db(db,actor,queries)
+    except sqlite3.Error as exc:
+        raise BusinessError(f'只读查询失败：{exc}') from exc
     db.execute('PRAGMA query_only=ON')
     return db
 
 
 def query(sql, actor=None):
-    db=_read_connection(actor)
+    db=_read_connection(actor,[sql])
     try:
         return _read_query(db,sql)
     finally:
@@ -288,16 +294,12 @@ def _read_query(db,sql):
     """SQLite VM authorizer, read-only mode, table allowlist and per-query budget."""
     if not isinstance(sql,str) or len(sql)>12000:
         raise BusinessError('查询语句过长或格式错误')
-    safe_functions={'sum','avg','count','min','max','round','coalesce','ifnull','nullif','abs','strftime','date','datetime','substr','substring','length','lower','upper','trim','printf','julianday','total','cast','like','row_number','rank','dense_rank'}
-    def authorize(action,a,b,database,trigger):
-        if action in (sqlite3.SQLITE_SELECT,sqlite3.SQLITE_RECURSIVE):
-            return sqlite3.SQLITE_OK
-        if action==sqlite3.SQLITE_READ and a in CATALOG:
-            return sqlite3.SQLITE_OK
-        if action==sqlite3.SQLITE_FUNCTION and (b or '').lower() in safe_functions:
-            return sqlite3.SQLITE_OK
-        return sqlite3.SQLITE_DENY
-    db.set_authorizer(authorize)
+    db.set_progress_handler(None,0)
+    db.set_authorizer(None)
+    physical={r[0] for r in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+    db.set_authorizer(read_authorizer(CATALOG,physical_tables=physical))
+    db.setlimit(sqlite3.SQLITE_LIMIT_LENGTH,1_000_000)
+    db.setlimit(sqlite3.SQLITE_LIMIT_COLUMN,200)
     ticks=0
     def budget():
         nonlocal ticks
@@ -309,8 +311,19 @@ def _read_query(db,sql):
         columns=[d[0] for d in cursor.description or []]
         if len(columns)!=len(set(columns)):
             raise BusinessError('结果包含重复列名，请使用AS别名')
-        result=[dict(r) for r in cursor.fetchmany(501)]
-        return {'columns':columns,'rows':result[:500],'truncated':len(result)>500,'as_of':now(),'source':'ERP/MES SQLite','limit':500}
+        result=[]
+        size=0
+        truncated=False
+        for row in cursor:
+            item=dict(row)
+            try: encoded=json.dumps(item,ensure_ascii=False).encode('utf-8')
+            except (TypeError,ValueError) as exc: raise BusinessError('查询结果仅支持文本、数字和空值') from exc
+            if len(result)>=500 or size+len(encoded)>2_000_000:
+                truncated=True
+                break
+            size+=len(encoded)
+            result.append(item)
+        return {'columns':columns,'rows':result,'truncated':truncated,'as_of':now(),'source':'ERP/MES SQLite','limit':500}
     except sqlite3.Error as exc:
         raise BusinessError(f'只读查询失败：{exc}') from exc
 
@@ -318,16 +331,19 @@ def _read_query(db,sql):
 
 def dashboard(actor):
     """All dashboard panels use one fresh, permission-filtered snapshot."""
-    db=_read_connection(actor)
+    tables=actor['policy']['tables']
+    cards=[]
+    candidates=[('orders',['quantity','unit_price'],'订单总金额','元','ROUND(COALESCE(SUM(quantity*unit_price),0),2)'),
+                ('orders',['status'],'待交付订单','单',"SUM(CASE WHEN status!='shipped' THEN 1 ELSE 0 END)"),
+                ('work_orders',['status'],'生产中工单','张',"SUM(CASE WHEN status='running' THEN 1 ELSE 0 END)"),
+                ('materials',['stock','safety_stock'],'低库存原料','种','SUM(CASE WHEN stock<safety_stock THEN 1 ELSE 0 END)'),
+                ('production_reports',['good_qty','bad_qty'],'综合良品率','%','ROUND(100.0*SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0),2)'),
+                ('purchases',['status'],'待收货采购单','张',"SUM(CASE WHEN status='ordered' THEN 1 ELSE 0 END)")]
+    visible=[c for c in candidates if set(c[1])<=set(tables.get(c[0],[]))]
+    section_tables=[t for t in ['orders','work_orders','materials','purchases','products'] if t in tables]
+    statements=[f'SELECT {c[4]} value FROM {c[0]}' for c in visible]+[f'SELECT * FROM {t} LIMIT 8' for t in section_tables]
+    db=_read_connection(actor,statements)
     try:
-        tables=actor['policy']['tables']
-        cards=[]
-        candidates=[('orders',['quantity','unit_price'],'订单总金额','元','ROUND(COALESCE(SUM(quantity*unit_price),0),2)'),
-                    ('orders',['status'],'待交付订单','单',"SUM(CASE WHEN status!='shipped' THEN 1 ELSE 0 END)"),
-                    ('work_orders',['status'],'生产中工单','张',"SUM(CASE WHEN status='running' THEN 1 ELSE 0 END)"),
-                    ('materials',['stock','safety_stock'],'低库存原料','种','SUM(CASE WHEN stock<safety_stock THEN 1 ELSE 0 END)'),
-                    ('production_reports',['good_qty','bad_qty'],'综合良品率','%','ROUND(100.0*SUM(good_qty)/NULLIF(SUM(good_qty+bad_qty),0),2)'),
-                    ('purchases',['status'],'待收货采购单','张',"SUM(CASE WHEN status='ordered' THEN 1 ELSE 0 END)")]
         for table,columns,label,unit,expr in candidates:
             if set(columns)<=set(tables.get(table,[])):
                 result=_read_query(db,f'SELECT {expr} value FROM {table}')

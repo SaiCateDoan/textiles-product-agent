@@ -1,4 +1,5 @@
 """Private Python tool adapter. No MCP, no generic URL/HTTP execution tool."""
+import asyncio
 import httpx
 from .auth import current_actor
 from .config import ERP_URL, INTERNAL_TOKEN
@@ -26,7 +27,7 @@ class ERPAdapter:
             raise AdapterError('业务适配器尚未启动')
         # Identity belongs to this request, never to the shared client's defaults.
         headers={'X-Internal-Token':INTERNAL_TOKEN}
-        if path!='/health': headers['X-Actor-Session']=current_actor()['session_hash']
+        if path!='/health': headers['X-Actor-Session']=(await asyncio.to_thread(current_actor))['session_hash']
         try:
             response=await self._client.request(method,ERP_URL+path,json=body,headers=headers)
         except httpx.RequestError as exc:

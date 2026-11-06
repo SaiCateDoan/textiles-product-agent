@@ -13,7 +13,6 @@ def connect(name='erp'):
     db = sqlite3.connect(DATA / f'{name}.sqlite3', timeout=20)
     db.row_factory = sqlite3.Row
     db.execute('PRAGMA foreign_keys=ON')
-    db.execute('PRAGMA journal_mode=WAL')
     return db
 
 
@@ -35,8 +34,21 @@ def rows(db, sql, args=()):
     return [dict(r) for r in db.execute(sql, args).fetchall()]
 
 
+def payload_page(db,sql,args,field,max_rows=200,max_bytes=2_000_000):
+    """Keyset page with a byte budget; always allow one record to make progress."""
+    page=[]
+    size=0
+    for row in db.execute(sql,args):
+        length=len(row[field].encode('utf-8'))
+        if len(page)>=max_rows or (page and size+length>max_bytes):
+            return page,True
+        page.append(dict(row));size+=length
+    return page,False
+
+
 def init_erp():
     db = connect()
+    db.execute('PRAGMA journal_mode=WAL')
     db.executescript('''
     CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY,name TEXT NOT NULL,contact TEXT);
     CREATE TABLE IF NOT EXISTS suppliers(id TEXT PRIMARY KEY,name TEXT NOT NULL);
@@ -52,6 +64,12 @@ def init_erp():
     CREATE TABLE IF NOT EXISTS shipments(id TEXT PRIMARY KEY,order_id TEXT REFERENCES orders(id),quantity REAL NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT,operation TEXT NOT NULL,request_id TEXT NOT NULL,payload TEXT NOT NULL,result TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS idempotency(request_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,result TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS orders_customer ON orders(customer_id,id);
+    CREATE INDEX IF NOT EXISTS work_orders_order ON work_orders(order_id,id);
+    CREATE INDEX IF NOT EXISTS work_orders_machine_status ON work_orders(machine_id,status);
+    CREATE INDEX IF NOT EXISTS production_reports_work ON production_reports(work_order_id,id);
+    CREATE INDEX IF NOT EXISTS shipments_order ON shipments(order_id,id);
+    CREATE INDEX IF NOT EXISTS purchases_material ON purchases(material_id);
     ''')
     if 'actor_id' not in {r['name'] for r in db.execute('PRAGMA table_info(audit)')}:
         db.execute("ALTER TABLE audit ADD COLUMN actor_id TEXT NOT NULL DEFAULT 'legacy'")
@@ -87,6 +105,7 @@ def init_erp():
 
 def init_agent():
     db=connect('agent')
+    db.execute('PRAGMA journal_mode=WAL')
     db.executescript('''
     CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,title TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id TEXT REFERENCES sessions(id),role TEXT NOT NULL,content TEXT NOT NULL,created_at TEXT NOT NULL);
@@ -94,6 +113,12 @@ def init_agent():
     CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT,run_id TEXT REFERENCES runs(id),kind TEXT NOT NULL,payload TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS reports(id TEXT PRIMARY KEY,title TEXT NOT NULL,chart_type TEXT NOT NULL,spec TEXT NOT NULL,data TEXT NOT NULL,sql TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS skill_config(id TEXT PRIMARY KEY,body TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS messages_session_id ON messages(session_id,id);
+    CREATE INDEX IF NOT EXISTS messages_user_turns ON messages(session_id,id) WHERE role='user';
+    CREATE INDEX IF NOT EXISTS messages_assistant_turns ON messages(session_id,id) WHERE role='assistant';
+    CREATE INDEX IF NOT EXISTS runs_session_created ON runs(session_id,created_at,id);
+    CREATE INDEX IF NOT EXISTS runs_status_session ON runs(status,session_id);
+    CREATE INDEX IF NOT EXISTS events_run_id ON events(run_id,id);
     ''')
     interrupted=rows(db,"SELECT DISTINCT session_id FROM runs WHERE status='running'")
     db.execute("UPDATE runs SET status='interrupted',error='服务重启，执行已中断；请核对工具记录后继续。' WHERE status='running'")

@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-11-06T10:59:17.947029+08:00",
+  "started_at": "2026-11-06T15:41:58.182542+08:00",
   "model": "deepseek-flash",
   "checks": [
     {
@@ -9,6 +9,11 @@
     },
     {
       "name": "No MCP endpoint",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Mutation rejects missing login",
       "passed": true,
       "details": null
     },
@@ -249,36 +254,36 @@
     {
       "name": "analysis_and_charts",
       "prompt": "请查询各产品累计订单金额和累计生产良品率，金额和报工分开聚合以免重复计数。生成三份保存的报表：产品订单金额柱状图、产品订单金额饼图、产品良品率明细表。每份使用真实SQL数据，不要只给文字表格。最后说明订单金额不是回款。",
-      "session_id": "CHAT-B3E8D78DCB",
-      "run_id": "RUN-262D1B67C4",
+      "session_id": "CHAT-30E5ACAAF3",
+      "run_id": "RUN-4855E77734",
       "events": [
         {
           "id": 1,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T10:59:21+08:00"
+          "created_at": "2026-11-06T15:42:02+08:00"
         },
         {
           "id": 2,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "get_catalog",
             "arguments": {},
-            "call_id": "call_00_8kkojuCASyyGmArAg4AF4372"
+            "call_id": "call_00_uRbg4G2rEWoqC0rrUEg53996"
           },
-          "created_at": "2026-11-06T10:59:23+08:00"
+          "created_at": "2026-11-06T15:42:03+08:00"
         },
         {
           "id": 3,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "get_catalog",
-            "call_id": "call_00_8kkojuCASyyGmArAg4AF4372",
+            "call_id": "call_00_uRbg4G2rEWoqC0rrUEg53996",
             "ok": true,
             "result": [
               {
@@ -940,436 +945,440 @@
                     "notnull": 1,
                     "dflt_value": null,
                     "pk": 0
+                  },
+                  {
+                    "cid": 6,
+                    "name": "actor_id",
+                    "type": "TEXT",
+                    "notnull": 1,
+                    "dflt_value": "'legacy'",
+                    "pk": 0
                   }
                 ]
               }
             ]
           },
-          "created_at": "2026-11-06T10:59:23+08:00"
+          "created_at": "2026-11-06T15:42:03+08:00"
         },
         {
           "id": 4,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T10:59:23+08:00"
+          "created_at": "2026-11-06T15:42:03+08:00"
         },
         {
           "id": 5,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT p.id, p.name, COUNT(o.id) AS order_cnt, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount, ROUND(SUM(o.quantity),2) AS order_qty FROM products p LEFT JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY order_amount DESC"
+              "sql": "SELECT p.id, p.name, COUNT(o.id) AS order_cnt, SUM(o.quantity) AS qty, SUM(o.quantity*o.unit_price) AS amount FROM products p LEFT JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY amount DESC"
             },
-            "call_id": "call_00_Q3A22B3S40tdC06YjIvf7529"
+            "call_id": "call_00_pIk1oaGUn58OuXhXhLh38698"
           },
-          "created_at": "2026-11-06T10:59:26+08:00"
+          "created_at": "2026-11-06T15:42:05+08:00"
         },
         {
           "id": 6,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_Q3A22B3S40tdC06YjIvf7529",
+            "call_id": "call_00_pIk1oaGUn58OuXhXhLh38698",
             "ok": true,
             "result": {
               "columns": [
                 "id",
                 "name",
                 "order_cnt",
-                "order_amount",
-                "order_qty"
+                "qty",
+                "amount"
               ],
               "rows": [
                 {
                   "id": "P003",
                   "name": "靛蓝弹力牛仔",
                   "order_cnt": 6,
-                  "order_amount": 466200.0,
-                  "order_qty": 11100.0
+                  "qty": 11100.0,
+                  "amount": 466200.0
                 },
                 {
                   "id": "P002",
                   "name": "再生涤棉斜纹",
                   "order_cnt": 6,
-                  "order_amount": 336000.0,
-                  "order_qty": 10500.0
+                  "qty": 10500.0,
+                  "amount": 336000.0
                 },
                 {
                   "id": "P001",
                   "name": "云感纯棉府绸",
                   "order_cnt": 6,
-                  "order_amount": 277200.0,
-                  "order_qty": 9900.0
+                  "qty": 9900.0,
+                  "amount": 277200.0
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T10:59:26+08:00",
+              "as_of": "2026-11-06T15:42:05+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T10:59:27+08:00"
+          "created_at": "2026-11-06T15:42:05+08:00"
         },
         {
           "id": 7,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT p.id, p.name, COUNT(pr.id) AS report_cnt, ROUND(SUM(pr.good_qty),2) AS good_qty, ROUND(SUM(pr.bad_qty),2) AS bad_qty, ROUND(SUM(pr.good_qty)/NULLIF(SUM(pr.good_qty+pr.bad_qty),0)*100,2) AS yield_pct FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY yield_pct DESC"
+              "sql": "SELECT p.id, p.name, COUNT(pr.id) AS report_cnt, SUM(pr.good_qty) AS good, SUM(pr.bad_qty) AS bad, ROUND(SUM(pr.good_qty)*100.0/NULLIF(SUM(pr.good_qty+pr.bad_qty),0),2) AS yield_pct FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY p.id"
             },
-            "call_id": "call_01_2JhFg3TETO17gX9fZj2C4645"
+            "call_id": "call_01_YYaYc2gsxqJU3iGISkNJ2019"
           },
-          "created_at": "2026-11-06T10:59:27+08:00"
+          "created_at": "2026-11-06T15:42:05+08:00"
         },
         {
           "id": 8,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_01_2JhFg3TETO17gX9fZj2C4645",
+            "call_id": "call_01_YYaYc2gsxqJU3iGISkNJ2019",
             "ok": true,
             "result": {
               "columns": [
                 "id",
                 "name",
                 "report_cnt",
-                "good_qty",
-                "bad_qty",
+                "good",
+                "bad",
                 "yield_pct"
               ],
               "rows": [
                 {
-                  "id": "P003",
-                  "name": "靛蓝弹力牛仔",
+                  "id": "P001",
+                  "name": "云感纯棉府绸",
                   "report_cnt": 4,
-                  "good_qty": 6200.0,
-                  "bad_qty": 80.0,
-                  "yield_pct": 98.73
+                  "good": 5400.0,
+                  "bad": 80.0,
+                  "yield_pct": 98.54
                 },
                 {
                   "id": "P002",
                   "name": "再生涤棉斜纹",
                   "report_cnt": 4,
-                  "good_qty": 5800.0,
-                  "bad_qty": 80.0,
+                  "good": 5800.0,
+                  "bad": 80.0,
                   "yield_pct": 98.64
                 },
                 {
-                  "id": "P001",
-                  "name": "云感纯棉府绸",
+                  "id": "P003",
+                  "name": "靛蓝弹力牛仔",
                   "report_cnt": 4,
-                  "good_qty": 5400.0,
-                  "bad_qty": 80.0,
-                  "yield_pct": 98.54
+                  "good": 6200.0,
+                  "bad": 80.0,
+                  "yield_pct": 98.73
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T10:59:27+08:00",
+              "as_of": "2026-11-06T15:42:05+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T10:59:27+08:00"
+          "created_at": "2026-11-06T15:42:05+08:00"
         },
         {
           "id": 9,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T10:59:27+08:00"
+          "created_at": "2026-11-06T15:42:05+08:00"
         },
         {
           "id": 10,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "create_report",
             "arguments": {
               "title": "各产品累计订单金额（柱状图）",
               "chart_type": "bar",
-              "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY order_amount DESC",
-              "x": "product_name",
+              "sql": "SELECT p.name AS 产品, ROUND(SUM(o.quantity*o.unit_price),2) AS 累计订单金额_元 FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY 累计订单金额_元 DESC",
+              "x": "产品",
               "y": [
-                "order_amount"
+                "累计订单金额_元"
               ],
-              "description": "按产品聚合销售订单金额（quantity*unit_price，单位元），仅从orders表聚合，不含报工数据，避免重复计数。订单金额不等于回款。"
+              "description": "按产品聚合销售订单 quantity*unit_price，订单表单独聚合，不与报工表JOIN，避免重复计数。金额为订单金额，非回款。"
             },
-            "call_id": "call_00_9w6oBIjmiWlUizl5yyOQ2317"
+            "call_id": "call_00_UYqvvLEdQuvPWvRJqBn65082"
           },
-          "created_at": "2026-11-06T10:59:31+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 11,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "create_report",
-            "call_id": "call_00_9w6oBIjmiWlUizl5yyOQ2317",
+            "call_id": "call_00_UYqvvLEdQuvPWvRJqBn65082",
             "ok": true,
             "result": {
-              "id": "RPT-73B0417617",
+              "id": "RPT-AD007D3458",
               "title": "各产品累计订单金额（柱状图）",
               "chart_type": "bar",
-              "x": "product_name",
+              "x": "产品",
               "y": [
-                "order_amount"
+                "累计订单金额_元"
               ],
               "group": "",
-              "description": "按产品聚合销售订单金额（quantity*unit_price，单位元），仅从orders表聚合，不含报工数据，避免重复计数。订单金额不等于回款。",
+              "description": "按产品聚合销售订单 quantity*unit_price，订单表单独聚合，不与报工表JOIN，避免重复计数。金额为订单金额，非回款。",
               "data": {
                 "columns": [
-                  "product_name",
-                  "order_amount"
+                  "产品",
+                  "累计订单金额_元"
                 ],
                 "rows": [
                   {
-                    "product_name": "靛蓝弹力牛仔",
-                    "order_amount": 466200.0
+                    "产品": "靛蓝弹力牛仔",
+                    "累计订单金额_元": 466200.0
                   },
                   {
-                    "product_name": "再生涤棉斜纹",
-                    "order_amount": 336000.0
+                    "产品": "再生涤棉斜纹",
+                    "累计订单金额_元": 336000.0
                   },
                   {
-                    "product_name": "云感纯棉府绸",
-                    "order_amount": 277200.0
+                    "产品": "云感纯棉府绸",
+                    "累计订单金额_元": 277200.0
                   }
                 ],
                 "truncated": false,
-                "as_of": "2026-11-06T10:59:31+08:00",
+                "as_of": "2026-11-06T15:42:08+08:00",
                 "source": "ERP/MES SQLite",
                 "limit": 500
               },
-              "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY order_amount DESC",
-              "created_at": "2026-11-06T10:59:31+08:00"
+              "sql": "SELECT p.name AS 产品, ROUND(SUM(o.quantity*o.unit_price),2) AS 累计订单金额_元 FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY 累计订单金额_元 DESC",
+              "created_at": "2026-11-06T15:42:08+08:00"
             }
           },
-          "created_at": "2026-11-06T10:59:31+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 12,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "create_report",
             "arguments": {
               "title": "各产品累计订单金额占比（饼图）",
               "chart_type": "pie",
-              "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY order_amount DESC",
-              "x": "product_name",
+              "sql": "SELECT p.name AS 产品, ROUND(SUM(o.quantity*o.unit_price),2) AS 累计订单金额_元 FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY 累计订单金额_元 DESC",
+              "x": "产品",
               "y": [
-                "order_amount"
+                "累计订单金额_元"
               ],
-              "description": "各产品累计订单金额占比（元）。金额仅来自orders表聚合，与报工数据分开统计。"
+              "description": "各产品累计订单金额占比，数据来自订单表独立聚合。订单金额不等于回款。"
             },
-            "call_id": "call_01_j16KzUwk4rE7ZWFHkkcb0656"
+            "call_id": "call_01_blLoB31Nu9R8ksi0wTay6098"
           },
-          "created_at": "2026-11-06T10:59:31+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 13,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "create_report",
-            "call_id": "call_01_j16KzUwk4rE7ZWFHkkcb0656",
+            "call_id": "call_01_blLoB31Nu9R8ksi0wTay6098",
             "ok": true,
             "result": {
-              "id": "RPT-2A6D3357B8",
+              "id": "RPT-874FE81601",
               "title": "各产品累计订单金额占比（饼图）",
               "chart_type": "pie",
-              "x": "product_name",
+              "x": "产品",
               "y": [
-                "order_amount"
+                "累计订单金额_元"
               ],
               "group": "",
-              "description": "各产品累计订单金额占比（元）。金额仅来自orders表聚合，与报工数据分开统计。",
+              "description": "各产品累计订单金额占比，数据来自订单表独立聚合。订单金额不等于回款。",
               "data": {
                 "columns": [
-                  "product_name",
-                  "order_amount"
+                  "产品",
+                  "累计订单金额_元"
                 ],
                 "rows": [
                   {
-                    "product_name": "靛蓝弹力牛仔",
-                    "order_amount": 466200.0
+                    "产品": "靛蓝弹力牛仔",
+                    "累计订单金额_元": 466200.0
                   },
                   {
-                    "product_name": "再生涤棉斜纹",
-                    "order_amount": 336000.0
+                    "产品": "再生涤棉斜纹",
+                    "累计订单金额_元": 336000.0
                   },
                   {
-                    "product_name": "云感纯棉府绸",
-                    "order_amount": 277200.0
+                    "产品": "云感纯棉府绸",
+                    "累计订单金额_元": 277200.0
                   }
                 ],
                 "truncated": false,
-                "as_of": "2026-11-06T10:59:32+08:00",
+                "as_of": "2026-11-06T15:42:08+08:00",
                 "source": "ERP/MES SQLite",
                 "limit": 500
               },
-              "sql": "SELECT p.name AS product_name, ROUND(SUM(o.quantity*o.unit_price),2) AS order_amount FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY order_amount DESC",
-              "created_at": "2026-11-06T10:59:32+08:00"
+              "sql": "SELECT p.name AS 产品, ROUND(SUM(o.quantity*o.unit_price),2) AS 累计订单金额_元 FROM products p JOIN orders o ON o.product_id=p.id GROUP BY p.id, p.name ORDER BY 累计订单金额_元 DESC",
+              "created_at": "2026-11-06T15:42:08+08:00"
             }
           },
-          "created_at": "2026-11-06T10:59:32+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 14,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_start",
           "payload": {
             "name": "create_report",
             "arguments": {
               "title": "各产品累计生产良品率明细表",
               "chart_type": "table",
-              "sql": "SELECT p.id AS product_id, p.name AS product_name, COUNT(pr.id) AS report_cnt, ROUND(SUM(pr.good_qty),2) AS good_qty_m, ROUND(SUM(pr.bad_qty),2) AS bad_qty_m, ROUND(SUM(pr.good_qty+pr.bad_qty),2) AS total_qty_m, ROUND(SUM(pr.good_qty)/NULLIF(SUM(pr.good_qty+pr.bad_qty),0)*100,2) AS yield_pct FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY yield_pct DESC",
-              "description": "良品率=SUM(good_qty)/SUM(good_qty+bad_qty)，基于production_reports报工明细按产品聚合，单位米；与订单金额分开聚合，避免重复计数。"
+              "sql": "SELECT p.id AS 产品编码, p.name AS 产品, COUNT(pr.id) AS 报工次数, SUM(pr.good_qty) AS 累计良品米数, SUM(pr.bad_qty) AS 累计不良米数, ROUND(SUM(pr.good_qty)*100.0/NULLIF(SUM(pr.good_qty+pr.bad_qty),0),2) AS 良品率_百分比 FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY 良品率_百分比 DESC",
+              "description": "良品率=SUM(good_qty)/SUM(good_qty+bad_qty)，基于production_reports明细按产品聚合，与订单金额分开统计。"
             },
-            "call_id": "call_02_7uUUosaXjga0tVjShpzZ7154"
+            "call_id": "call_02_bboIevLCejnf9Dev2ot72402"
           },
-          "created_at": "2026-11-06T10:59:32+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 15,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "tool_result",
           "payload": {
             "name": "create_report",
-            "call_id": "call_02_7uUUosaXjga0tVjShpzZ7154",
+            "call_id": "call_02_bboIevLCejnf9Dev2ot72402",
             "ok": true,
             "result": {
-              "id": "RPT-B4BCA96464",
+              "id": "RPT-6246A55FFD",
               "title": "各产品累计生产良品率明细表",
               "chart_type": "table",
               "x": "",
               "y": [],
               "group": "",
-              "description": "良品率=SUM(good_qty)/SUM(good_qty+bad_qty)，基于production_reports报工明细按产品聚合，单位米；与订单金额分开聚合，避免重复计数。",
+              "description": "良品率=SUM(good_qty)/SUM(good_qty+bad_qty)，基于production_reports明细按产品聚合，与订单金额分开统计。",
               "data": {
                 "columns": [
-                  "product_id",
-                  "product_name",
-                  "report_cnt",
-                  "good_qty_m",
-                  "bad_qty_m",
-                  "total_qty_m",
-                  "yield_pct"
+                  "产品编码",
+                  "产品",
+                  "报工次数",
+                  "累计良品米数",
+                  "累计不良米数",
+                  "良品率_百分比"
                 ],
                 "rows": [
                   {
-                    "product_id": "P003",
-                    "product_name": "靛蓝弹力牛仔",
-                    "report_cnt": 4,
-                    "good_qty_m": 6200.0,
-                    "bad_qty_m": 80.0,
-                    "total_qty_m": 6280.0,
-                    "yield_pct": 98.73
+                    "产品编码": "P003",
+                    "产品": "靛蓝弹力牛仔",
+                    "报工次数": 4,
+                    "累计良品米数": 6200.0,
+                    "累计不良米数": 80.0,
+                    "良品率_百分比": 98.73
                   },
                   {
-                    "product_id": "P002",
-                    "product_name": "再生涤棉斜纹",
-                    "report_cnt": 4,
-                    "good_qty_m": 5800.0,
-                    "bad_qty_m": 80.0,
-                    "total_qty_m": 5880.0,
-                    "yield_pct": 98.64
+                    "产品编码": "P002",
+                    "产品": "再生涤棉斜纹",
+                    "报工次数": 4,
+                    "累计良品米数": 5800.0,
+                    "累计不良米数": 80.0,
+                    "良品率_百分比": 98.64
                   },
                   {
-                    "product_id": "P001",
-                    "product_name": "云感纯棉府绸",
-                    "report_cnt": 4,
-                    "good_qty_m": 5400.0,
-                    "bad_qty_m": 80.0,
-                    "total_qty_m": 5480.0,
-                    "yield_pct": 98.54
+                    "产品编码": "P001",
+                    "产品": "云感纯棉府绸",
+                    "报工次数": 4,
+                    "累计良品米数": 5400.0,
+                    "累计不良米数": 80.0,
+                    "良品率_百分比": 98.54
                   }
                 ],
                 "truncated": false,
-                "as_of": "2026-11-06T10:59:32+08:00",
+                "as_of": "2026-11-06T15:42:08+08:00",
                 "source": "ERP/MES SQLite",
                 "limit": 500
               },
-              "sql": "SELECT p.id AS product_id, p.name AS product_name, COUNT(pr.id) AS report_cnt, ROUND(SUM(pr.good_qty),2) AS good_qty_m, ROUND(SUM(pr.bad_qty),2) AS bad_qty_m, ROUND(SUM(pr.good_qty+pr.bad_qty),2) AS total_qty_m, ROUND(SUM(pr.good_qty)/NULLIF(SUM(pr.good_qty+pr.bad_qty),0)*100,2) AS yield_pct FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY yield_pct DESC",
-              "created_at": "2026-11-06T10:59:32+08:00"
+              "sql": "SELECT p.id AS 产品编码, p.name AS 产品, COUNT(pr.id) AS 报工次数, SUM(pr.good_qty) AS 累计良品米数, SUM(pr.bad_qty) AS 累计不良米数, ROUND(SUM(pr.good_qty)*100.0/NULLIF(SUM(pr.good_qty+pr.bad_qty),0),2) AS 良品率_百分比 FROM products p LEFT JOIN work_orders w ON w.product_id=p.id LEFT JOIN production_reports pr ON pr.work_order_id=w.id GROUP BY p.id, p.name ORDER BY 良品率_百分比 DESC",
+              "created_at": "2026-11-06T15:42:08+08:00"
             }
           },
-          "created_at": "2026-11-06T10:59:32+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 16,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T10:59:32+08:00"
+          "created_at": "2026-11-06T15:42:08+08:00"
         },
         {
           "id": 17,
-          "run_id": "RUN-262D1B67C4",
+          "run_id": "RUN-4855E77734",
           "kind": "answer",
           "payload": {
-            "content": "三份报表已生成并保存。\n\n**数据事实（截至 2026-11-06 10:59，来源 ERP/MES）**\n\n| 产品 | 订单数 | 累计订单金额（元） | 报工次数 | 良品（米） | 不良（米） | 良品率 |\n|---|---|---|---|---|---|---|\n| 靛蓝弹力牛仔 P003 | 6 | 466,200 | 4 | 6,200 | 80 | 98.73% |\n| 再生涤棉斜纹 P002 | 6 | 336,000 | 4 | 5,800 | 80 | 98.64% |\n| 云感纯棉府绸 P001 | 6 | 277,200 | 4 | 5,400 | 80 | 98.54% |\n\n**报表编号**\n- RPT-73B0417617：各产品累计订单金额（柱状图）\n- RPT-2A6D3357B8：各产品累计订单金额占比（饼图）\n- RPT-B4BCA96464：各产品累计生产良品率明细表\n\n**口径说明**\n- 金额与报工分开聚合：金额只从 orders 表按产品汇总（quantity×unit_price），良品率只从 production_reports 报工明细按产品汇总，两者未在同一查询中 JOIN 相乘，避免重复计数。\n- 良品率 = SUM(good_qty) / SUM(good_qty+bad_qty)，单位为米。\n- **订单金额是订单口径的合同金额（quantity×unit_price），不是回款、不是实收收入**；系统内无回款/收款数据，无法据此判断资金到账情况。"
+            "content": "## 查询结果说明\n\n三份报表已生成并保存，数据均来自 ERP/MES 真实 SQL 查询。订单金额与报工良品率**分开聚合**：订单金额只从 `orders` 表按产品汇总（quantity×unit_price），良品率只从 `production_reports` 明细按产品汇总，两者未在同一查询中 JOIN，避免订单行与报工行交叉放大。\n\n**订单金额（元，按产品）**\n- 靛蓝弹力牛仔 P003：466,200（6 单，11,100 米）\n- 再生涤棉斜纹 P002：336,000（6 单，10,500 米）\n- 云感纯棉府绸 P001：277,200（6 单，9,900 米）\n- 合计 1,079,400 元\n\n**生产良品率（良品米数 / 总报工米数）**\n- 靛蓝弹力牛仔 P003：98.73%（良品 6,200 米，不良 80 米，4 次报工）\n- 再生涤棉斜纹 P002：98.64%（良品 5,800 米，不良 80 米，4 次报工）\n- 云感纯棉府绸 P001：98.54%（良品 5,400 米，不良 80 米，4 次报工）\n\n**已保存报表编号**\n| 报表 | 编号 | 类型 |\n|---|---|---|\n| 各产品累计订单金额 | RPT-AD007D3458 | 柱状图 |\n| 各产品累计订单金额占比 | RPT-874FE81601 | 饼图 |\n| 各产品累计生产良品率明细 | RPT-6246A55FFD | 明细表 |\n\n**重要口径提醒**：上述“订单金额”是按订单数量×订单单价计算的**订单金额（含税前的下单口径）**，**不是回款、不是实收收入**，也不代表已发货或已开票金额；实际回款需以财务收款记录为准，本系统无收款数据。良品率仅覆盖已报工部分，未报工工单不计入分母。"
           },
-          "created_at": "2026-11-06T10:59:36+08:00"
+          "created_at": "2026-11-06T15:42:12+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 22850,
-        "completion_tokens": 1376,
+        "prompt_tokens": 23621,
+        "completion_tokens": 1461,
         "model": "deepseek-flash",
         "model_calls": 4
       },
-      "elapsed_seconds": 15.19
+      "elapsed_seconds": 10.14
     },
     {
       "name": "purchase_skill",
       "prompt": "已收到原料M002再生涤纶丝400kg，确认实际已到货。请读取并运行purchase-receive技能，创建采购单并立即入库，核对库存变化。",
-      "session_id": "CHAT-0AA78AA0FE",
-      "run_id": "RUN-EF3F418131",
+      "session_id": "CHAT-7648965C47",
+      "run_id": "RUN-50810CAC48",
       "events": [
         {
           "id": 18,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T10:59:37+08:00"
+          "created_at": "2026-11-06T15:42:13+08:00"
         },
         {
           "id": 19,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "read_skill",
             "arguments": {
               "skill_id": "purchase-receive"
             },
-            "call_id": "call_00_fP5Lm5C9Nib38ucDZv3v2558"
+            "call_id": "call_00_d6FSI1PaxC90zsM79Qc41281"
           },
-          "created_at": "2026-11-06T10:59:40+08:00"
+          "created_at": "2026-11-06T15:42:13+08:00"
         },
         {
           "id": 20,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "read_skill",
-            "call_id": "call_00_fP5Lm5C9Nib38ucDZv3v2558",
+            "call_id": "call_00_d6FSI1PaxC90zsM79Qc41281",
             "ok": true,
             "result": {
               "id": "purchase-receive",
@@ -1392,6 +1401,7 @@
                   "default": null
                 }
               },
+              "required_tables": [],
               "steps": [
                 {
                   "id": "purchase",
@@ -1411,26 +1421,26 @@
               ]
             }
           },
-          "created_at": "2026-11-06T10:59:40+08:00"
+          "created_at": "2026-11-06T15:42:13+08:00"
         },
         {
           "id": 21,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "get_catalog",
             "arguments": {},
-            "call_id": "call_01_zWY2dnONQJIF9KA7SbSp1099"
+            "call_id": "call_01_3tnzyaU8NaxWqIBrK7hH0899"
           },
-          "created_at": "2026-11-06T10:59:40+08:00"
+          "created_at": "2026-11-06T15:42:13+08:00"
         },
         {
           "id": 22,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "get_catalog",
-            "call_id": "call_01_zWY2dnONQJIF9KA7SbSp1099",
+            "call_id": "call_01_3tnzyaU8NaxWqIBrK7hH0899",
             "ok": true,
             "result": [
               {
@@ -2092,42 +2102,50 @@
                     "notnull": 1,
                     "dflt_value": null,
                     "pk": 0
+                  },
+                  {
+                    "cid": 6,
+                    "name": "actor_id",
+                    "type": "TEXT",
+                    "notnull": 1,
+                    "dflt_value": "'legacy'",
+                    "pk": 0
                   }
                 ]
               }
             ]
           },
-          "created_at": "2026-11-06T10:59:41+08:00"
+          "created_at": "2026-11-06T15:42:13+08:00"
         },
         {
           "id": 23,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T10:59:41+08:00"
+          "created_at": "2026-11-06T15:42:14+08:00"
         },
         {
           "id": 24,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
               "sql": "SELECT m.id, m.name, m.unit, m.stock, m.safety_stock, m.unit_cost, m.supplier_id, s.name AS supplier_name FROM materials m LEFT JOIN suppliers s ON s.id=m.supplier_id WHERE m.id='M002'"
             },
-            "call_id": "call_00_rPDGyQmDcyF2brQn67kw7062"
+            "call_id": "call_00_dXFzZKlVJqxWBY2zhYnN3660"
           },
-          "created_at": "2026-11-06T10:59:43+08:00"
+          "created_at": "2026-11-06T15:42:15+08:00"
         },
         {
           "id": 25,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_rPDGyQmDcyF2brQn67kw7062",
+            "call_id": "call_00_dXFzZKlVJqxWBY2zhYnN3660",
             "ok": true,
             "result": {
               "columns": [
@@ -2153,25 +2171,25 @@
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T10:59:43+08:00",
+              "as_of": "2026-11-06T15:42:15+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T10:59:43+08:00"
+          "created_at": "2026-11-06T15:42:15+08:00"
         },
         {
           "id": 26,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T10:59:43+08:00"
+          "created_at": "2026-11-06T15:42:15+08:00"
         },
         {
           "id": 27,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "run_skill",
@@ -2182,75 +2200,75 @@
                 "quantity": 400
               }
             },
-            "call_id": "call_00_zBUP7D0KkJcSebcXF1aw0479"
+            "call_id": "call_00_h2FSwKH9M0hPOuvCJncx1852"
           },
-          "created_at": "2026-11-06T10:59:46+08:00"
+          "created_at": "2026-11-06T15:42:16+08:00"
         },
         {
           "id": 28,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "run_skill",
-            "call_id": "call_00_zBUP7D0KkJcSebcXF1aw0479",
+            "call_id": "call_00_h2FSwKH9M0hPOuvCJncx1852",
             "ok": true,
             "result": {
               "skill_id": "purchase-receive",
               "version": "1.0.0",
               "steps": {
                 "purchase": {
-                  "id": "PO-9523545FD3",
+                  "id": "PO-CE1E30E8B6",
                   "material_id": "M002",
                   "supplier_id": "S001",
                   "quantity": 400.0,
                   "unit_cost": 18.0,
                   "status": "ordered",
-                  "created_at": "2026-11-06T10:59:46+08:00"
+                  "created_at": "2026-11-06T15:42:16+08:00"
                 },
                 "receipt": {
-                  "id": "PO-9523545FD3",
+                  "id": "PO-CE1E30E8B6",
                   "material_id": "M002",
                   "supplier_id": "S001",
                   "quantity": 400.0,
                   "unit_cost": 18.0,
                   "status": "received",
-                  "created_at": "2026-11-06T10:59:46+08:00"
+                  "created_at": "2026-11-06T15:42:16+08:00"
                 }
               },
               "atomic": true
             }
           },
-          "created_at": "2026-11-06T10:59:46+08:00"
+          "created_at": "2026-11-06T15:42:16+08:00"
         },
         {
           "id": 29,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T10:59:46+08:00"
+          "created_at": "2026-11-06T15:42:16+08:00"
         },
         {
           "id": 30,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
               "sql": "SELECT m.id, m.name, m.unit, m.stock, m.safety_stock FROM materials m WHERE m.id='M002';\n"
             },
-            "call_id": "call_00_g8yvEK0fUwxKZMqhRvM33482"
+            "call_id": "call_00_y0tiNMgBbUmrhXuXB3BP1755"
           },
-          "created_at": "2026-11-06T10:59:49+08:00"
+          "created_at": "2026-11-06T15:42:17+08:00"
         },
         {
           "id": 31,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_g8yvEK0fUwxKZMqhRvM33482",
+            "call_id": "call_00_y0tiNMgBbUmrhXuXB3BP1755",
             "ok": true,
             "result": {
               "columns": [
@@ -2270,33 +2288,33 @@
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T10:59:49+08:00",
+              "as_of": "2026-11-06T15:42:17+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T10:59:49+08:00"
+          "created_at": "2026-11-06T15:42:17+08:00"
         },
         {
           "id": 32,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
               "sql": "SELECT id, item_type, item_id, quantity, reason, reference_id, created_at FROM stock_movements WHERE item_id='M002' ORDER BY id DESC LIMIT 5"
             },
-            "call_id": "call_01_OeR2Nw4xmcbQBFESkOQq3655"
+            "call_id": "call_01_2aP03aTzw66xgylh9jN84573"
           },
-          "created_at": "2026-11-06T10:59:49+08:00"
+          "created_at": "2026-11-06T15:42:17+08:00"
         },
         {
           "id": 33,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_01_OeR2Nw4xmcbQBFESkOQq3655",
+            "call_id": "call_01_2aP03aTzw66xgylh9jN84573",
             "ok": true,
             "result": {
               "columns": [
@@ -2315,8 +2333,8 @@
                   "item_id": "M002",
                   "quantity": 400.0,
                   "reason": "采购入库",
-                  "reference_id": "PO-9523545FD3",
-                  "created_at": "2026-11-06T10:59:46+08:00"
+                  "reference_id": "PO-CE1E30E8B6",
+                  "created_at": "2026-11-06T15:42:16+08:00"
                 },
                 {
                   "id": 2,
@@ -2325,80 +2343,80 @@
                   "quantity": 650.0,
                   "reason": "期初库存",
                   "reference_id": "OPENING",
-                  "created_at": "2026-11-06T10:59:19+08:00"
+                  "created_at": "2026-11-06T15:41:59+08:00"
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T10:59:50+08:00",
+              "as_of": "2026-11-06T15:42:17+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T10:59:50+08:00"
+          "created_at": "2026-11-06T15:42:17+08:00"
         },
         {
           "id": 34,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第5轮"
           },
-          "created_at": "2026-11-06T10:59:50+08:00"
+          "created_at": "2026-11-06T15:42:17+08:00"
         },
         {
           "id": 35,
-          "run_id": "RUN-EF3F418131",
+          "run_id": "RUN-50810CAC48",
           "kind": "answer",
           "payload": {
-            "content": "已完成采购与到货入库（技能 purchase-receive 原子提交成功）。\n\n**执行结果**\n- 原料：M002 再生涤纶丝，计量单位 kg\n- 供应商：S001 新源纱业（取自原料主数据），单价 18 元/kg\n- 采购单号：**PO-9523545FD3**，数量 400 kg，状态已由 ordered 变为 **received（已入库）**\n\n**库存核对**\n- 入库前库存：650 kg\n- 入库后库存：**1050 kg**（+400 kg，与到货数量一致）\n- 库存流水：新增一条记录，item_type=material，item_id=M002，数量 +400，原因“采购入库”，reference_id=PO-9523545FD3，时间 2026-11-06 10:59:46\n\n**备注**\n- 安全库存为 1000 kg，本次入库后库存 1050 kg，已略高于安全库存（此前低于安全库存 350 kg）。\n- 采购金额按主数据单价估算为 400×18 = 7200 元，仅为采购金额，不代表付款。\n- 本次未生成报表（未要求图表）。"
+            "content": "已按 purchase-receive 技能完成采购与入库，全流程原子提交成功。\n\n**执行结果**\n- 采购单号：**PO-CE1E30E8B6**（原料 M002 再生涤纶丝，供应商 S001 新源纱业，数量 400 kg，单价 18 元/kg，金额 7,200 元）\n- 单据状态：ordered → **received（已整单入库）**\n\n**库存核对**\n| 项目 | 数值 |\n|---|---|\n| 入库前库存 | 650 kg |\n| 本次入库 | +400 kg |\n| 入库后库存 | **1,050 kg** |\n| 安全库存 | 1,000 kg |\n\n库存流水新增一条记录：id=8，item_type=material，item_id=M002，数量 +400，原因“采购入库”，关联单号 PO-CE1E30E8B6，时间 2026-11-06 15:42:16。\n\n**结论与提示**\n- 库存由低于安全线（650 kg）回升至 1,050 kg，已高于安全库存 1,000 kg，仅高出 50 kg，余量偏紧，后续领料需留意。\n- 本次未生成图表报表（未要求）；如需入库趋势或库存关注图，可再告知。"
           },
-          "created_at": "2026-11-06T10:59:54+08:00"
+          "created_at": "2026-11-06T15:42:20+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 27992,
-        "completion_tokens": 642,
+        "prompt_tokens": 29175,
+        "completion_tokens": 677,
         "model": "deepseek-flash",
         "model_calls": 5
       },
-      "elapsed_seconds": 17.3
+      "elapsed_seconds": 8.14
     },
     {
       "name": "order_production_skill",
       "prompt": "请读取并执行order-to-production技能：客户C001，产品P001，数量120米，交期2026-11-16，设备MC02。明确授权创建订单、排产并下达领料。完成后告诉我订单号和工单号。",
-      "session_id": "CHAT-54B893005A",
-      "run_id": "RUN-02EF70EFB2",
+      "session_id": "CHAT-0C64DE20A2",
+      "run_id": "RUN-A9CD6AA6A5",
       "events": [
         {
           "id": 36,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T10:59:55+08:00"
+          "created_at": "2026-11-06T15:42:21+08:00"
         },
         {
           "id": 37,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "read_skill",
             "arguments": {
               "skill_id": "order-to-production"
             },
-            "call_id": "call_00_5dUkI8WHdqgJ8n5LG5UU0258"
+            "call_id": "call_00_Nvc0Gc0u8fizwFrCZLVE3420"
           },
-          "created_at": "2026-11-06T10:59:58+08:00"
+          "created_at": "2026-11-06T15:42:22+08:00"
         },
         {
           "id": 38,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "read_skill",
-            "call_id": "call_00_5dUkI8WHdqgJ8n5LG5UU0258",
+            "call_id": "call_00_Nvc0Gc0u8fizwFrCZLVE3420",
             "ok": true,
             "result": {
               "id": "order-to-production",
@@ -2439,6 +2457,7 @@
                   "default": null
                 }
               },
+              "required_tables": [],
               "steps": [
                 {
                   "id": "order",
@@ -2468,35 +2487,35 @@
               ]
             }
           },
-          "created_at": "2026-11-06T10:59:58+08:00"
+          "created_at": "2026-11-06T15:42:22+08:00"
         },
         {
           "id": 39,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T10:59:58+08:00"
+          "created_at": "2026-11-06T15:42:22+08:00"
         },
         {
           "id": 40,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "get_catalog",
             "arguments": {},
-            "call_id": "call_00_XG1aBAVoGvxwraBKA2X56227"
+            "call_id": "call_00_JAU9FNM6YeWFSoeA07Sj3690"
           },
-          "created_at": "2026-11-06T11:00:00+08:00"
+          "created_at": "2026-11-06T15:42:22+08:00"
         },
         {
           "id": 41,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "get_catalog",
-            "call_id": "call_00_XG1aBAVoGvxwraBKA2X56227",
+            "call_id": "call_00_JAU9FNM6YeWFSoeA07Sj3690",
             "ok": true,
             "result": [
               {
@@ -3158,42 +3177,50 @@
                     "notnull": 1,
                     "dflt_value": null,
                     "pk": 0
+                  },
+                  {
+                    "cid": 6,
+                    "name": "actor_id",
+                    "type": "TEXT",
+                    "notnull": 1,
+                    "dflt_value": "'legacy'",
+                    "pk": 0
                   }
                 ]
               }
             ]
           },
-          "created_at": "2026-11-06T11:00:00+08:00"
+          "created_at": "2026-11-06T15:42:22+08:00"
         },
         {
           "id": 42,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T11:00:00+08:00"
+          "created_at": "2026-11-06T15:42:23+08:00"
         },
         {
           "id": 43,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
               "sql": "SELECT c.id AS cust_id, c.name AS cust_name, p.id AS prod_id, p.name AS prod_name, p.price, p.stock AS prod_stock FROM customers c, products p WHERE c.id='C001' AND p.id='P001'"
             },
-            "call_id": "call_00_xyjHRIhILzLv2MyV5arH6168"
+            "call_id": "call_00_WY0Gl6QDE2ScD9lJYYKg7674"
           },
-          "created_at": "2026-11-06T11:00:04+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 44,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_xyjHRIhILzLv2MyV5arH6168",
+            "call_id": "call_00_WY0Gl6QDE2ScD9lJYYKg7674",
             "ok": true,
             "result": {
               "columns": [
@@ -3215,33 +3242,33 @@
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:04+08:00",
+              "as_of": "2026-11-06T15:42:24+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:04+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 45,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT b.material_id, m.name, m.unit, b.quantity AS per_meter, ROUND(b.quantity*120,3) AS need_120m, m.stock, m.safety_stock, ROUND(m.stock - b.quantity*120,3) AS after_stock FROM bom b JOIN materials m ON m.id=b.material_id WHERE b.product_id='P001'"
+              "sql": "SELECT b.material_id, m.name, m.unit, b.quantity AS per_meter, ROUND(b.quantity*120,3) AS need_120, m.stock, m.safety_stock, ROUND(m.stock - b.quantity*120,3) AS after_stock FROM bom b JOIN materials m ON m.id=b.material_id WHERE b.product_id='P001'"
             },
-            "call_id": "call_01_N1WKWQ4D7wtIsJpmNJpC7841"
+            "call_id": "call_01_GZHgilbjjZsObfMQY1dP6266"
           },
-          "created_at": "2026-11-06T11:00:04+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 46,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_01_N1WKWQ4D7wtIsJpmNJpC7841",
+            "call_id": "call_01_GZHgilbjjZsObfMQY1dP6266",
             "ok": true,
             "result": {
               "columns": [
@@ -3249,7 +3276,7 @@
                 "name",
                 "unit",
                 "per_meter",
-                "need_120m",
+                "need_120",
                 "stock",
                 "safety_stock",
                 "after_stock"
@@ -3260,7 +3287,7 @@
                   "name": "精梳棉纱 32S",
                   "unit": "kg",
                   "per_meter": 0.18,
-                  "need_120m": 21.6,
+                  "need_120": 21.6,
                   "stock": 3800.0,
                   "safety_stock": 1500.0,
                   "after_stock": 3778.4
@@ -3270,40 +3297,40 @@
                   "name": "柔软整理剂",
                   "unit": "kg",
                   "per_meter": 0.008,
-                  "need_120m": 0.96,
+                  "need_120": 0.96,
                   "stock": 260.0,
                   "safety_stock": 150.0,
                   "after_stock": 259.04
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:05+08:00",
+              "as_of": "2026-11-06T15:42:24+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:05+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 47,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
               "sql": "SELECT m.id, m.name, m.workshop, m.status, (SELECT COUNT(*) FROM work_orders w WHERE w.machine_id=m.id AND w.status='running') AS running_wo FROM machines m WHERE m.id='MC02'"
             },
-            "call_id": "call_02_BAFTq4tB1mnHq3m3fvnJ9866"
+            "call_id": "call_02_dgLk5AIBGpxnkP45urwD3139"
           },
-          "created_at": "2026-11-06T11:00:05+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 48,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_02_BAFTq4tB1mnHq3m3fvnJ9866",
+            "call_id": "call_02_dgLk5AIBGpxnkP45urwD3139",
             "ok": true,
             "result": {
               "columns": [
@@ -3323,25 +3350,25 @@
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:05+08:00",
+              "as_of": "2026-11-06T15:42:24+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:05+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 49,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T11:00:05+08:00"
+          "created_at": "2026-11-06T15:42:24+08:00"
         },
         {
           "id": 50,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_start",
           "payload": {
             "name": "run_skill",
@@ -3355,24 +3382,24 @@
                 "machine_id": "MC02"
               }
             },
-            "call_id": "call_00_68p0bRjOfd8ZrCMsqaHH0592"
+            "call_id": "call_00_FJVjbnUTBVbeJ0vYH8rC1008"
           },
-          "created_at": "2026-11-06T11:00:08+08:00"
+          "created_at": "2026-11-06T15:42:25+08:00"
         },
         {
           "id": 51,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "tool_result",
           "payload": {
             "name": "run_skill",
-            "call_id": "call_00_68p0bRjOfd8ZrCMsqaHH0592",
+            "call_id": "call_00_FJVjbnUTBVbeJ0vYH8rC1008",
             "ok": true,
             "result": {
               "skill_id": "order-to-production",
               "version": "1.0.0",
               "steps": {
                 "order": {
-                  "id": "SO-DC67E539DE",
+                  "id": "SO-A9856D6AE0",
                   "customer_id": "C001",
                   "product_id": "P001",
                   "quantity": 120.0,
@@ -3380,157 +3407,220 @@
                   "due_date": "2026-11-16",
                   "status": "confirmed",
                   "shipped": 0.0,
-                  "created_at": "2026-11-06T11:00:09+08:00"
+                  "created_at": "2026-11-06T15:42:25+08:00"
                 },
                 "work": {
-                  "id": "WO-B06DAD381F",
-                  "order_id": "SO-DC67E539DE",
+                  "id": "WO-A87E37735E",
+                  "order_id": "SO-A9856D6AE0",
                   "product_id": "P001",
                   "machine_id": "MC02",
                   "quantity": 120.0,
                   "good_qty": 0.0,
                   "bad_qty": 0.0,
                   "status": "planned",
-                  "created_at": "2026-11-06T11:00:09+08:00"
+                  "created_at": "2026-11-06T15:42:25+08:00"
                 },
                 "release": {
-                  "id": "WO-B06DAD381F",
-                  "order_id": "SO-DC67E539DE",
+                  "id": "WO-A87E37735E",
+                  "order_id": "SO-A9856D6AE0",
                   "product_id": "P001",
                   "machine_id": "MC02",
                   "quantity": 120.0,
                   "good_qty": 0.0,
                   "bad_qty": 0.0,
                   "status": "running",
-                  "created_at": "2026-11-06T11:00:09+08:00"
+                  "created_at": "2026-11-06T15:42:25+08:00"
                 }
               },
               "atomic": true
             }
           },
-          "created_at": "2026-11-06T11:00:09+08:00"
+          "created_at": "2026-11-06T15:42:25+08:00"
         },
         {
           "id": 52,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第5轮"
           },
-          "created_at": "2026-11-06T11:00:09+08:00"
+          "created_at": "2026-11-06T15:42:26+08:00"
         },
         {
           "id": 53,
-          "run_id": "RUN-02EF70EFB2",
+          "run_id": "RUN-A9CD6AA6A5",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT item_id, quantity, reason, reference_id, created_at FROM stock_movements WHERE reference_id='WO-A87E37735E' ORDER BY id"
+            },
+            "call_id": "call_00_bqG4hwITUep1BRTsPyQA9798"
+          },
+          "created_at": "2026-11-06T15:42:26+08:00"
+        },
+        {
+          "id": 54,
+          "run_id": "RUN-A9CD6AA6A5",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_00_bqG4hwITUep1BRTsPyQA9798",
+            "ok": true,
+            "result": {
+              "columns": [
+                "item_id",
+                "quantity",
+                "reason",
+                "reference_id",
+                "created_at"
+              ],
+              "rows": [
+                {
+                  "item_id": "M001",
+                  "quantity": -21.6,
+                  "reason": "生产领料",
+                  "reference_id": "WO-A87E37735E",
+                  "created_at": "2026-11-06T15:42:25+08:00"
+                },
+                {
+                  "item_id": "M004",
+                  "quantity": -0.96,
+                  "reason": "生产领料",
+                  "reference_id": "WO-A87E37735E",
+                  "created_at": "2026-11-06T15:42:25+08:00"
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:26+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:26+08:00"
+        },
+        {
+          "id": 55,
+          "run_id": "RUN-A9CD6AA6A5",
+          "kind": "status",
+          "payload": {
+            "message": "模型正在处理 · 第6轮"
+          },
+          "created_at": "2026-11-06T15:42:26+08:00"
+        },
+        {
+          "id": 56,
+          "run_id": "RUN-A9CD6AA6A5",
           "kind": "answer",
           "payload": {
-            "content": "已按“接单即排产”技能一次性完成三步，事务原子提交成功。\n\n**执行结果**\n- 销售订单号：**SO-DC67E539DE**（客户 C001 杭州云织服饰，产品 P001 云感纯棉府绸，120 米，单价 28 元/米，交期 2026-11-16，状态 confirmed）\n- 生产工单号：**WO-B06DAD381F**（设备 MC02 喷气织机 A02，目标 120 米，状态已由 planned 变为 running，领料已下达）\n\n**排产前核实**\n- BOM 用料：精梳棉纱 32S 需 21.6 kg（库存 3800 kg）、柔软整理剂需 0.96 kg（库存 260 kg），下达后余量均高于安全库存，无缺料。\n- MC02 状态 available，无在制工单。\n\n**限制说明**\n- 工单已下达领料并进入运行，尚未报工，成品库存未增加；订单尚未发货（shipped=0）。\n- 订单金额 120×28=3360 元为订单金额，不等于实收收入。"
+            "content": "已按“接单即排产”技能完成全部三步，事务原子提交成功。\n\n**结果**\n- 销售订单号：**SO-A9856D6AE0**（客户 C001 杭州云织服饰，产品 P001 云感纯棉府绸，120 米，单价 28 元/米，交期 2026-11-16，状态 confirmed）\n- 生产工单号：**WO-A87E37735E**（设备 MC02 喷气织机 A02，目标 120 米，状态已由 planned 转为 running，即领料已下达）\n\n**排产前核实**\n- 客户与产品均存在，成品 P001 现有库存 1800 米。\n- BOM 用料充足：M001 精梳棉纱 32S 需 21.6 kg（库存 3800 kg）、M004 柔软整理剂需 0.96 kg（库存 260 kg），领料后仍高于安全库存。\n- MC02 状态 available，且无在制工单。\n\n**领料流水（已实际扣减）**\n- M001：-21.6 kg，原因“生产领料”，关联 WO-A87E37735E\n- M004：-0.96 kg，原因“生产领料”，关联 WO-A87E37735E\n\n**说明与限制**\n- 工单当前为 running，尚未报工，良品/不良品均为 0；完工需后续报工达到 120 米。\n- 本次未创建采购单、未发货；订单金额 120×28=3360 元为订单金额，不代表回款。"
           },
-          "created_at": "2026-11-06T11:00:12+08:00"
+          "created_at": "2026-11-06T15:42:29+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 25532,
-        "completion_tokens": 762,
+        "prompt_tokens": 34601,
+        "completion_tokens": 934,
         "model": "deepseek-flash",
-        "model_calls": 5
+        "model_calls": 6
       },
-      "elapsed_seconds": 17.23
+      "elapsed_seconds": 9.14
     },
     {
       "name": "multi_turn_quality_shipping",
       "prompt": "对刚才创建的那张工单报工：合格118米，不合格2米，原因色差。然后按刚才的销售订单发货118米。请实际执行，并核对工单、订单及成品库存。",
-      "session_id": "CHAT-54B893005A",
-      "run_id": "RUN-C040419B40",
+      "session_id": "CHAT-0C64DE20A2",
+      "run_id": "RUN-56825C5568",
       "events": [
         {
-          "id": 54,
-          "run_id": "RUN-C040419B40",
+          "id": 57,
+          "run_id": "RUN-56825C5568",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T11:00:14+08:00"
+          "created_at": "2026-11-06T15:42:30+08:00"
         },
         {
-          "id": 55,
-          "run_id": "RUN-C040419B40",
+          "id": 58,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_start",
           "payload": {
             "name": "report_production",
             "arguments": {
-              "work_order_id": "WO-B06DAD381F",
+              "work_order_id": "WO-A87E37735E",
               "good_qty": 118,
               "bad_qty": 2,
               "defect": "色差"
             },
-            "call_id": "call_00_CtaQgZuHLS7FFBnrEAE93586"
+            "call_id": "call_00_HjMdvllr7teLcIMl0s1m8255"
           },
-          "created_at": "2026-11-06T11:00:18+08:00"
+          "created_at": "2026-11-06T15:42:32+08:00"
         },
         {
-          "id": 56,
-          "run_id": "RUN-C040419B40",
+          "id": 59,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_result",
           "payload": {
             "name": "report_production",
-            "call_id": "call_00_CtaQgZuHLS7FFBnrEAE93586",
+            "call_id": "call_00_HjMdvllr7teLcIMl0s1m8255",
             "ok": true,
             "result": {
-              "id": "PR-B5F91E4723",
+              "id": "PR-5072DA18D3",
+              "good_qty": 118.0,
+              "bad_qty": 2.0,
               "work_order": {
-                "id": "WO-B06DAD381F",
-                "order_id": "SO-DC67E539DE",
+                "id": "WO-A87E37735E",
+                "order_id": "SO-A9856D6AE0",
                 "product_id": "P001",
                 "machine_id": "MC02",
                 "quantity": 120.0,
                 "good_qty": 118.0,
                 "bad_qty": 2.0,
                 "status": "completed",
-                "created_at": "2026-11-06T11:00:09+08:00"
-              },
-              "good_qty": 118.0,
-              "bad_qty": 2.0
+                "created_at": "2026-11-06T15:42:25+08:00"
+              }
             }
           },
-          "created_at": "2026-11-06T11:00:18+08:00"
+          "created_at": "2026-11-06T15:42:32+08:00"
         },
         {
-          "id": 57,
-          "run_id": "RUN-C040419B40",
+          "id": 60,
+          "run_id": "RUN-56825C5568",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T11:00:18+08:00"
+          "created_at": "2026-11-06T15:42:32+08:00"
         },
         {
-          "id": 58,
-          "run_id": "RUN-C040419B40",
+          "id": 61,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_start",
           "payload": {
             "name": "ship_order",
             "arguments": {
-              "order_id": "SO-DC67E539DE",
+              "order_id": "SO-A9856D6AE0",
               "quantity": 118
             },
-            "call_id": "call_00_TQSxzQZKZW1uT2M4iMMX8787"
+            "call_id": "call_00_OSmJQZ0MdopUe7zpnBE73865"
           },
-          "created_at": "2026-11-06T11:00:21+08:00"
+          "created_at": "2026-11-06T15:42:33+08:00"
         },
         {
-          "id": 59,
-          "run_id": "RUN-C040419B40",
+          "id": 62,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_result",
           "payload": {
             "name": "ship_order",
-            "call_id": "call_00_TQSxzQZKZW1uT2M4iMMX8787",
+            "call_id": "call_00_OSmJQZ0MdopUe7zpnBE73865",
             "ok": true,
             "result": {
-              "id": "SH-DB858FD397",
+              "id": "SH-7953131E9D",
+              "quantity": 118.0,
               "order": {
-                "id": "SO-DC67E539DE",
+                "id": "SO-A9856D6AE0",
                 "customer_id": "C001",
                 "product_id": "P001",
                 "quantity": 120.0,
@@ -3538,144 +3628,181 @@
                 "due_date": "2026-11-16",
                 "status": "partial_shipped",
                 "shipped": 118.0,
-                "created_at": "2026-11-06T11:00:09+08:00"
-              },
-              "quantity": 118.0
+                "created_at": "2026-11-06T15:42:25+08:00"
+              }
             }
           },
-          "created_at": "2026-11-06T11:00:22+08:00"
+          "created_at": "2026-11-06T15:42:33+08:00"
         },
         {
-          "id": 60,
-          "run_id": "RUN-C040419B40",
+          "id": 63,
+          "run_id": "RUN-56825C5568",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T11:00:22+08:00"
+          "created_at": "2026-11-06T15:42:33+08:00"
         },
         {
-          "id": 61,
-          "run_id": "RUN-C040419B40",
+          "id": 64,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT w.id AS wo_id, w.status AS wo_status, w.quantity AS target, w.good_qty, w.bad_qty, w.machine_id, o.id AS order_id, o.status AS order_status, o.quantity AS order_qty, o.shipped, o.due_date FROM work_orders w JOIN orders o ON o.id=w.order_id WHERE w.id='WO-B06DAD381F'"
+              "sql": "SELECT w.id AS wo_id, w.status, w.quantity AS target, w.good_qty, w.bad_qty, ROUND(w.good_qty/(w.good_qty+w.bad_qty)*100,2) AS yield_pct, w.machine_id FROM work_orders w WHERE w.id='WO-A87E37735E'"
             },
-            "call_id": "call_00_8RDvlEazhnFNXoa2aDdY6215"
+            "call_id": "call_00_CIn4YP1rlzDMIMH81LIL2460"
           },
-          "created_at": "2026-11-06T11:00:25+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 62,
-          "run_id": "RUN-C040419B40",
+          "id": 65,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_8RDvlEazhnFNXoa2aDdY6215",
+            "call_id": "call_00_CIn4YP1rlzDMIMH81LIL2460",
             "ok": true,
             "result": {
               "columns": [
                 "wo_id",
-                "wo_status",
+                "status",
                 "target",
                 "good_qty",
                 "bad_qty",
-                "machine_id",
-                "order_id",
-                "order_status",
-                "order_qty",
-                "shipped",
-                "due_date"
+                "yield_pct",
+                "machine_id"
               ],
               "rows": [
                 {
-                  "wo_id": "WO-B06DAD381F",
-                  "wo_status": "completed",
+                  "wo_id": "WO-A87E37735E",
+                  "status": "completed",
                   "target": 120.0,
                   "good_qty": 118.0,
                   "bad_qty": 2.0,
-                  "machine_id": "MC02",
-                  "order_id": "SO-DC67E539DE",
-                  "order_status": "partial_shipped",
-                  "order_qty": 120.0,
-                  "shipped": 118.0,
-                  "due_date": "2026-11-16"
+                  "yield_pct": 98.33,
+                  "machine_id": "MC02"
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:26+08:00",
+              "as_of": "2026-11-06T15:42:35+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:26+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 63,
-          "run_id": "RUN-C040419B40",
+          "id": 66,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT id, name, unit, stock FROM products WHERE id='P001'"
+              "sql": "SELECT id, status, quantity, shipped, ROUND(quantity-shipped,2) AS unshipped, due_date FROM orders WHERE id='SO-A9856D6AE0'"
             },
-            "call_id": "call_01_47Yi1Oz9JpDvpfKNAfTL6042"
+            "call_id": "call_01_r53eSaBf6azQHycYS3eJ3035"
           },
-          "created_at": "2026-11-06T11:00:26+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 64,
-          "run_id": "RUN-C040419B40",
+          "id": 67,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_01_47Yi1Oz9JpDvpfKNAfTL6042",
+            "call_id": "call_01_r53eSaBf6azQHycYS3eJ3035",
+            "ok": true,
+            "result": {
+              "columns": [
+                "id",
+                "status",
+                "quantity",
+                "shipped",
+                "unshipped",
+                "due_date"
+              ],
+              "rows": [
+                {
+                  "id": "SO-A9856D6AE0",
+                  "status": "partial_shipped",
+                  "quantity": 120.0,
+                  "shipped": 118.0,
+                  "unshipped": 2.0,
+                  "due_date": "2026-11-16"
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:35+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:35+08:00"
+        },
+        {
+          "id": 68,
+          "run_id": "RUN-56825C5568",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT id, name, stock FROM products WHERE id='P001'"
+            },
+            "call_id": "call_02_ZsvKdsU5p5S10DxHneYA8375"
+          },
+          "created_at": "2026-11-06T15:42:35+08:00"
+        },
+        {
+          "id": 69,
+          "run_id": "RUN-56825C5568",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_02_ZsvKdsU5p5S10DxHneYA8375",
             "ok": true,
             "result": {
               "columns": [
                 "id",
                 "name",
-                "unit",
                 "stock"
               ],
               "rows": [
                 {
                   "id": "P001",
                   "name": "云感纯棉府绸",
-                  "unit": "m",
                   "stock": 1800.0
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:26+08:00",
+              "as_of": "2026-11-06T15:42:35+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:26+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 65,
-          "run_id": "RUN-C040419B40",
+          "id": 70,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT id, item_type, item_id, quantity, reason, reference_id, created_at FROM stock_movements WHERE reference_id IN ('WO-B06DAD381F','SO-DC67E539DE','PR-B5F91E4723','SH-DB858FD397') ORDER BY id"
+              "sql": "SELECT id, item_type, item_id, quantity, reason, reference_id, created_at FROM stock_movements WHERE reference_id IN ('WO-A87E37735E','SO-A9856D6AE0','SH-7953131E9D') ORDER BY id"
             },
-            "call_id": "call_02_aQMwOFrBrhIXrth2Nu7Y1572"
+            "call_id": "call_03_QxscBsMOjKEAABQHytk38971"
           },
-          "created_at": "2026-11-06T11:00:26+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 66,
-          "run_id": "RUN-C040419B40",
+          "id": 71,
+          "run_id": "RUN-56825C5568",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_02_aQMwOFrBrhIXrth2Nu7Y1572",
+            "call_id": "call_03_QxscBsMOjKEAABQHytk38971",
             "ok": true,
             "result": {
               "columns": [
@@ -3694,8 +3821,8 @@
                   "item_id": "M001",
                   "quantity": -21.6,
                   "reason": "生产领料",
-                  "reference_id": "WO-B06DAD381F",
-                  "created_at": "2026-11-06T11:00:09+08:00"
+                  "reference_id": "WO-A87E37735E",
+                  "created_at": "2026-11-06T15:42:25+08:00"
                 },
                 {
                   "id": 10,
@@ -3703,17 +3830,8 @@
                   "item_id": "M004",
                   "quantity": -0.96,
                   "reason": "生产领料",
-                  "reference_id": "WO-B06DAD381F",
-                  "created_at": "2026-11-06T11:00:09+08:00"
-                },
-                {
-                  "id": 11,
-                  "item_type": "product",
-                  "item_id": "P001",
-                  "quantity": 118.0,
-                  "reason": "合格品入库",
-                  "reference_id": "PR-B5F91E4723",
-                  "created_at": "2026-11-06T11:00:18+08:00"
+                  "reference_id": "WO-A87E37735E",
+                  "created_at": "2026-11-06T15:42:25+08:00"
                 },
                 {
                   "id": 12,
@@ -3721,275 +3839,378 @@
                   "item_id": "P001",
                   "quantity": -118.0,
                   "reason": "销售出库",
-                  "reference_id": "SH-DB858FD397",
-                  "created_at": "2026-11-06T11:00:22+08:00"
+                  "reference_id": "SH-7953131E9D",
+                  "created_at": "2026-11-06T15:42:33+08:00"
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:26+08:00",
+              "as_of": "2026-11-06T15:42:35+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:26+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 67,
-          "run_id": "RUN-C040419B40",
-          "kind": "tool_start",
-          "payload": {
-            "name": "query_data",
-            "arguments": {
-              "sql": "SELECT id, work_order_id, good_qty, bad_qty, defect, created_at FROM production_reports WHERE work_order_id='WO-B06DAD381F'"
-            },
-            "call_id": "call_03_j1lusxh079z6sgeehd9w1330"
-          },
-          "created_at": "2026-11-06T11:00:26+08:00"
-        },
-        {
-          "id": 68,
-          "run_id": "RUN-C040419B40",
-          "kind": "tool_result",
-          "payload": {
-            "name": "query_data",
-            "call_id": "call_03_j1lusxh079z6sgeehd9w1330",
-            "ok": true,
-            "result": {
-              "columns": [
-                "id",
-                "work_order_id",
-                "good_qty",
-                "bad_qty",
-                "defect",
-                "created_at"
-              ],
-              "rows": [
-                {
-                  "id": "PR-B5F91E4723",
-                  "work_order_id": "WO-B06DAD381F",
-                  "good_qty": 118.0,
-                  "bad_qty": 2.0,
-                  "defect": "色差",
-                  "created_at": "2026-11-06T11:00:18+08:00"
-                }
-              ],
-              "truncated": false,
-              "as_of": "2026-11-06T11:00:27+08:00",
-              "source": "ERP/MES SQLite",
-              "limit": 500
-            }
-          },
-          "created_at": "2026-11-06T11:00:27+08:00"
-        },
-        {
-          "id": 69,
-          "run_id": "RUN-C040419B40",
+          "id": 72,
+          "run_id": "RUN-56825C5568",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T11:00:27+08:00"
+          "created_at": "2026-11-06T15:42:35+08:00"
         },
         {
-          "id": 70,
-          "run_id": "RUN-C040419B40",
+          "id": 73,
+          "run_id": "RUN-56825C5568",
           "kind": "answer",
           "payload": {
-            "content": "已实际执行报工与发货，并完成核对。\n\n**执行单据**\n- 报工单：**PR-B5F91E4723**（工单 WO-B06DAD381F，合格 118 米，不合格 2 米，缺陷：色差）\n- 发货单：**SH-DB858FD397**（订单 SO-DC67E539DE，发货 118 米）\n\n**核对结果**\n| 项目 | 状态 |\n|---|---|\n| 工单 WO-B06DAD381F | 目标 120 米，累计合格 118 米、不合格 2 米，状态 **completed**（完工） |\n| 订单 SO-DC67E539DE | 订单量 120 米，已发 118 米，状态 **partial_shipped**（部分发货），交期 2026-11-16 |\n| 成品 P001 库存 | 1800 米（报工入库 +118、销售出库 −118，净变动为 0，与当前库存一致） |\n| 库存流水 | 领料 M001 −21.6 kg、M004 −0.96 kg；成品 +118（合格品入库）、−118（销售出库），共 4 条，均与单据对应 |\n\n**限制与提示**\n- 订单尚有 2 米未发（120−118），因本次仅产出 118 米合格品，订单未关闭；如需补齐需另行安排生产。\n- 不合格 2 米已记录缺陷“色差”，未入库，不形成成品库存。\n- 订单金额 120×28=3360 元为订单金额，非实收收入；已发货部分对应 118×28=3304 元。"
+            "content": "报工与发货均已实际执行成功，核对结果如下。\n\n**1. 报工（工单 WO-A87E37735E）**\n- 报工单号：**PR-5072DA18D3**，合格 118 米、不合格 2 米，缺陷原因“色差”\n- 工单状态：**completed**（累计报工 120 米达到目标自动完工）\n- 良品率：118 / (118+2) = **98.33%**\n\n**2. 发货（订单 SO-A9856D6AE0）**\n- 发货单号：**SH-7953131E9D**，发货 118 米\n- 订单状态：**partial_shipped**，已发 118 米，未发 **2 米**（订单量 120 米，交期 2026-11-16）\n\n**3. 成品库存核对（P001 云感纯棉府绸）**\n- 当前库存：**1800 米**\n- 库存流水：仅见一条成品出库 -118 米（原因“销售出库”，关联 SH-7953131E9D）\n- 注意：本次报工的 118 米合格品**未在库存流水中体现入库记录**，成品库存仍为 1800 米，与“入库 118 米、出库 118 米”的预期不符。也就是说，报工合格品入库环节没有产生可追溯的库存流水，建议核查系统的报工入库逻辑；本次未做任何手工库存调整。\n\n**4. 其他说明**\n- 不合格 2 米已按缺陷“色差”记录，未入库。\n- 订单尚差 2 米未交付，如需补齐需另行安排生产（当前无剩余在制工单）。"
           },
-          "created_at": "2026-11-06T11:00:30+08:00"
+          "created_at": "2026-11-06T15:42:38+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 33455,
-        "completion_tokens": 887,
+        "prompt_tokens": 35764,
+        "completion_tokens": 875,
         "model": "deepseek-flash",
         "model_calls": 4
       },
-      "elapsed_seconds": 16.27
+      "elapsed_seconds": 8.14
     },
     {
       "name": "rework_and_complete",
       "prompt": "请补足刚才订单剩余的2米：在MC02创建2米补产工单并下达，报工合格2米不合格0，再发货2米使订单完成。请依次实际执行。",
-      "session_id": "CHAT-54B893005A",
-      "run_id": "RUN-AFC7B05484",
+      "session_id": "CHAT-0C64DE20A2",
+      "run_id": "RUN-F3BB18D3D2",
       "events": [
         {
-          "id": 71,
-          "run_id": "RUN-AFC7B05484",
+          "id": 74,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T11:00:32+08:00"
+          "created_at": "2026-11-06T15:42:38+08:00"
         },
         {
-          "id": 72,
-          "run_id": "RUN-AFC7B05484",
+          "id": 75,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT m.id, m.status, (SELECT COUNT(*) FROM work_orders w WHERE w.machine_id=m.id AND w.status='running') AS running_wo FROM machines m WHERE m.id='MC02'"
+            },
+            "call_id": "call_00_ApYf4qYWc7MPqxBWrj0r8268"
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 76,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_00_ApYf4qYWc7MPqxBWrj0r8268",
+            "ok": true,
+            "result": {
+              "columns": [
+                "id",
+                "status",
+                "running_wo"
+              ],
+              "rows": [
+                {
+                  "id": "MC02",
+                  "status": "available",
+                  "running_wo": 0
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:40+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 77,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT id, status, quantity, shipped, ROUND(quantity-shipped,2) AS unshipped FROM orders WHERE id='SO-A9856D6AE0'"
+            },
+            "call_id": "call_01_K9yWSQozoj8QQLBu4kB96386"
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 78,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_01_K9yWSQozoj8QQLBu4kB96386",
+            "ok": true,
+            "result": {
+              "columns": [
+                "id",
+                "status",
+                "quantity",
+                "shipped",
+                "unshipped"
+              ],
+              "rows": [
+                {
+                  "id": "SO-A9856D6AE0",
+                  "status": "partial_shipped",
+                  "quantity": 120.0,
+                  "shipped": 118.0,
+                  "unshipped": 2.0
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:40+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 79,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT b.material_id, m.name, m.unit, ROUND(b.quantity*2,3) AS need_2m, m.stock FROM bom b JOIN materials m ON m.id=b.material_id WHERE b.product_id='P001'"
+            },
+            "call_id": "call_02_bcx5aBvPRk8mucyUMZLq0432"
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 80,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_02_bcx5aBvPRk8mucyUMZLq0432",
+            "ok": true,
+            "result": {
+              "columns": [
+                "material_id",
+                "name",
+                "unit",
+                "need_2m",
+                "stock"
+              ],
+              "rows": [
+                {
+                  "material_id": "M001",
+                  "name": "精梳棉纱 32S",
+                  "unit": "kg",
+                  "need_2m": 0.36,
+                  "stock": 3778.4
+                },
+                {
+                  "material_id": "M004",
+                  "name": "柔软整理剂",
+                  "unit": "kg",
+                  "need_2m": 0.016,
+                  "stock": 259.04
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:40+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 81,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "status",
+          "payload": {
+            "message": "模型正在处理 · 第2轮"
+          },
+          "created_at": "2026-11-06T15:42:40+08:00"
+        },
+        {
+          "id": 82,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "plan_order",
             "arguments": {
-              "order_id": "SO-DC67E539DE",
+              "order_id": "SO-A9856D6AE0",
               "machine_id": "MC02",
               "quantity": 2
             },
-            "call_id": "call_00_5HAc3mOsdYidWjRDxAfR1683"
+            "call_id": "call_00_vDLfHwcer8lJWmFPabii8381"
           },
-          "created_at": "2026-11-06T11:00:35+08:00"
+          "created_at": "2026-11-06T15:42:41+08:00"
         },
         {
-          "id": 73,
-          "run_id": "RUN-AFC7B05484",
+          "id": 83,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "plan_order",
-            "call_id": "call_00_5HAc3mOsdYidWjRDxAfR1683",
+            "call_id": "call_00_vDLfHwcer8lJWmFPabii8381",
             "ok": true,
             "result": {
-              "id": "WO-6E6BBA8E77",
-              "order_id": "SO-DC67E539DE",
+              "id": "WO-092F2BEE61",
+              "order_id": "SO-A9856D6AE0",
               "product_id": "P001",
               "machine_id": "MC02",
               "quantity": 2.0,
               "good_qty": 0.0,
               "bad_qty": 0.0,
               "status": "planned",
-              "created_at": "2026-11-06T11:00:35+08:00"
+              "created_at": "2026-11-06T15:42:41+08:00"
             }
           },
-          "created_at": "2026-11-06T11:00:35+08:00"
+          "created_at": "2026-11-06T15:42:41+08:00"
         },
         {
-          "id": 74,
-          "run_id": "RUN-AFC7B05484",
+          "id": 84,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
-            "message": "模型正在处理 · 第2轮"
+            "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T11:00:35+08:00"
+          "created_at": "2026-11-06T15:42:41+08:00"
         },
         {
-          "id": 75,
-          "run_id": "RUN-AFC7B05484",
+          "id": 85,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "release_work_order",
             "arguments": {
-              "work_order_id": "WO-6E6BBA8E77"
+              "work_order_id": "WO-092F2BEE61"
             },
-            "call_id": "call_00_6H4MYuIWMASLajXoh94m8429"
+            "call_id": "call_00_YqMvSZHsWZ9JtGPASw8I7020"
           },
-          "created_at": "2026-11-06T11:00:38+08:00"
+          "created_at": "2026-11-06T15:42:42+08:00"
         },
         {
-          "id": 76,
-          "run_id": "RUN-AFC7B05484",
+          "id": 86,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "release_work_order",
-            "call_id": "call_00_6H4MYuIWMASLajXoh94m8429",
+            "call_id": "call_00_YqMvSZHsWZ9JtGPASw8I7020",
             "ok": true,
             "result": {
-              "id": "WO-6E6BBA8E77",
-              "order_id": "SO-DC67E539DE",
+              "id": "WO-092F2BEE61",
+              "order_id": "SO-A9856D6AE0",
               "product_id": "P001",
               "machine_id": "MC02",
               "quantity": 2.0,
               "good_qty": 0.0,
               "bad_qty": 0.0,
               "status": "running",
-              "created_at": "2026-11-06T11:00:35+08:00"
+              "created_at": "2026-11-06T15:42:41+08:00"
             }
           },
-          "created_at": "2026-11-06T11:00:38+08:00"
+          "created_at": "2026-11-06T15:42:42+08:00"
         },
         {
-          "id": 77,
-          "run_id": "RUN-AFC7B05484",
+          "id": 87,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
-            "message": "模型正在处理 · 第3轮"
+            "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T11:00:38+08:00"
+          "created_at": "2026-11-06T15:42:42+08:00"
         },
         {
-          "id": 78,
-          "run_id": "RUN-AFC7B05484",
+          "id": 88,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "report_production",
             "arguments": {
               "good_qty": 2,
-              "work_order_id": "WO-6E6BBA8E77"
+              "work_order_id": "WO-092F2BEE61"
             },
-            "call_id": "call_00_owxDVxOurjhI0fa402P64286"
+            "call_id": "call_00_zCynIPQ3Jke1aj5N5aIx8822"
           },
-          "created_at": "2026-11-06T11:00:41+08:00"
+          "created_at": "2026-11-06T15:42:44+08:00"
         },
         {
-          "id": 79,
-          "run_id": "RUN-AFC7B05484",
+          "id": 89,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "report_production",
-            "call_id": "call_00_owxDVxOurjhI0fa402P64286",
+            "call_id": "call_00_zCynIPQ3Jke1aj5N5aIx8822",
             "ok": true,
             "result": {
-              "id": "PR-E52F7F2235",
+              "id": "PR-47FC9F5598",
+              "good_qty": 2.0,
+              "bad_qty": 0.0,
               "work_order": {
-                "id": "WO-6E6BBA8E77",
-                "order_id": "SO-DC67E539DE",
+                "id": "WO-092F2BEE61",
+                "order_id": "SO-A9856D6AE0",
                 "product_id": "P001",
                 "machine_id": "MC02",
                 "quantity": 2.0,
                 "good_qty": 2.0,
                 "bad_qty": 0.0,
                 "status": "completed",
-                "created_at": "2026-11-06T11:00:35+08:00"
-              },
-              "good_qty": 2.0,
-              "bad_qty": 0.0
+                "created_at": "2026-11-06T15:42:41+08:00"
+              }
             }
           },
-          "created_at": "2026-11-06T11:00:41+08:00"
+          "created_at": "2026-11-06T15:42:44+08:00"
         },
         {
-          "id": 80,
-          "run_id": "RUN-AFC7B05484",
+          "id": 90,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
-            "message": "模型正在处理 · 第4轮"
+            "message": "模型正在处理 · 第5轮"
           },
-          "created_at": "2026-11-06T11:00:41+08:00"
+          "created_at": "2026-11-06T15:42:44+08:00"
         },
         {
-          "id": 81,
-          "run_id": "RUN-AFC7B05484",
+          "id": 91,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "ship_order",
             "arguments": {
-              "order_id": "SO-DC67E539DE",
+              "order_id": "SO-A9856D6AE0",
               "quantity": 2
             },
-            "call_id": "call_00_WxAvsim3X3nXzmSXYyx15263"
+            "call_id": "call_00_TlO6XlsyJRGisPG8qsPy8650"
           },
-          "created_at": "2026-11-06T11:00:44+08:00"
+          "created_at": "2026-11-06T15:42:45+08:00"
         },
         {
-          "id": 82,
-          "run_id": "RUN-AFC7B05484",
+          "id": 92,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "ship_order",
-            "call_id": "call_00_WxAvsim3X3nXzmSXYyx15263",
+            "call_id": "call_00_TlO6XlsyJRGisPG8qsPy8650",
             "ok": true,
             "result": {
-              "id": "SH-682D856D52",
+              "id": "SH-DC33D902D9",
+              "quantity": 2.0,
               "order": {
-                "id": "SO-DC67E539DE",
+                "id": "SO-A9856D6AE0",
                 "customer_id": "C001",
                 "product_id": "P001",
                 "quantity": 120.0,
@@ -3997,110 +4218,145 @@
                 "due_date": "2026-11-16",
                 "status": "shipped",
                 "shipped": 120.0,
-                "created_at": "2026-11-06T11:00:09+08:00"
-              },
-              "quantity": 2.0
+                "created_at": "2026-11-06T15:42:25+08:00"
+              }
             }
           },
-          "created_at": "2026-11-06T11:00:44+08:00"
+          "created_at": "2026-11-06T15:42:45+08:00"
         },
         {
-          "id": 83,
-          "run_id": "RUN-AFC7B05484",
+          "id": 93,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
-            "message": "模型正在处理 · 第5轮"
+            "message": "模型正在处理 · 第6轮"
           },
-          "created_at": "2026-11-06T11:00:44+08:00"
+          "created_at": "2026-11-06T15:42:45+08:00"
         },
         {
-          "id": 84,
-          "run_id": "RUN-AFC7B05484",
+          "id": 94,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT w.id AS wo_id, w.status, w.quantity, w.good_qty, w.bad_qty, w.machine_id, o.id AS order_id, o.status AS order_status, o.quantity AS order_qty, o.shipped FROM work_orders w JOIN orders o ON o.id=w.order_id WHERE o.id='SO-DC67E539DE' ORDER BY w.created_at"
+              "sql": "SELECT id, status, quantity, good_qty, bad_qty, machine_id FROM work_orders WHERE order_id='SO-A9856D6AE0' ORDER BY created_at, id"
             },
-            "call_id": "call_00_mvqatHe7lf69d4yMagBN6132"
+            "call_id": "call_00_6YfPg2tjx60Ww3i8PZVj9729"
           },
-          "created_at": "2026-11-06T11:00:47+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 85,
-          "run_id": "RUN-AFC7B05484",
+          "id": 95,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_mvqatHe7lf69d4yMagBN6132",
+            "call_id": "call_00_6YfPg2tjx60Ww3i8PZVj9729",
             "ok": true,
             "result": {
               "columns": [
-                "wo_id",
+                "id",
                 "status",
                 "quantity",
                 "good_qty",
                 "bad_qty",
-                "machine_id",
-                "order_id",
-                "order_status",
-                "order_qty",
-                "shipped"
+                "machine_id"
               ],
               "rows": [
                 {
-                  "wo_id": "WO-B06DAD381F",
+                  "id": "WO-A87E37735E",
                   "status": "completed",
                   "quantity": 120.0,
                   "good_qty": 118.0,
                   "bad_qty": 2.0,
-                  "machine_id": "MC02",
-                  "order_id": "SO-DC67E539DE",
-                  "order_status": "shipped",
-                  "order_qty": 120.0,
-                  "shipped": 120.0
+                  "machine_id": "MC02"
                 },
                 {
-                  "wo_id": "WO-6E6BBA8E77",
+                  "id": "WO-092F2BEE61",
                   "status": "completed",
                   "quantity": 2.0,
                   "good_qty": 2.0,
                   "bad_qty": 0.0,
-                  "machine_id": "MC02",
-                  "order_id": "SO-DC67E539DE",
-                  "order_status": "shipped",
-                  "order_qty": 120.0,
-                  "shipped": 120.0
+                  "machine_id": "MC02"
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:47+08:00",
+              "as_of": "2026-11-06T15:42:47+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:47+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 86,
-          "run_id": "RUN-AFC7B05484",
+          "id": 96,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT id, item_type, item_id, quantity, reason, reference_id FROM stock_movements WHERE reference_id IN ('WO-6E6BBA8E77','PR-E52F7F2235','SH-682D856D52') ORDER BY id"
+              "sql": "SELECT id, status, quantity, shipped, ROUND(quantity-shipped,2) AS unshipped, due_date FROM orders WHERE id='SO-A9856D6AE0'"
             },
-            "call_id": "call_01_TNVAPm0Ij6HeetD5GaKq9379"
+            "call_id": "call_01_u1RRhukB8tFb1ABxDVRU2826"
           },
-          "created_at": "2026-11-06T11:00:48+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 87,
-          "run_id": "RUN-AFC7B05484",
+          "id": 97,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_01_TNVAPm0Ij6HeetD5GaKq9379",
+            "call_id": "call_01_u1RRhukB8tFb1ABxDVRU2826",
+            "ok": true,
+            "result": {
+              "columns": [
+                "id",
+                "status",
+                "quantity",
+                "shipped",
+                "unshipped",
+                "due_date"
+              ],
+              "rows": [
+                {
+                  "id": "SO-A9856D6AE0",
+                  "status": "shipped",
+                  "quantity": 120.0,
+                  "shipped": 120.0,
+                  "unshipped": 0.0,
+                  "due_date": "2026-11-16"
+                }
+              ],
+              "truncated": false,
+              "as_of": "2026-11-06T15:42:47+08:00",
+              "source": "ERP/MES SQLite",
+              "limit": 500
+            }
+          },
+          "created_at": "2026-11-06T15:42:47+08:00"
+        },
+        {
+          "id": 98,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_start",
+          "payload": {
+            "name": "query_data",
+            "arguments": {
+              "sql": "SELECT id, item_type, item_id, quantity, reason, reference_id, created_at FROM stock_movements WHERE reference_id IN ('WO-092F2BEE61','SH-DC33D902D9') ORDER BY id"
+            },
+            "call_id": "call_02_3a2QlFyAozeiNvCJyBaa2711"
+          },
+          "created_at": "2026-11-06T15:42:47+08:00"
+        },
+        {
+          "id": 99,
+          "run_id": "RUN-F3BB18D3D2",
+          "kind": "tool_result",
+          "payload": {
+            "name": "query_data",
+            "call_id": "call_02_3a2QlFyAozeiNvCJyBaa2711",
             "ok": true,
             "result": {
               "columns": [
@@ -4109,7 +4365,8 @@
                 "item_id",
                 "quantity",
                 "reason",
-                "reference_id"
+                "reference_id",
+                "created_at"
               ],
               "rows": [
                 {
@@ -4118,7 +4375,8 @@
                   "item_id": "M001",
                   "quantity": -0.36,
                   "reason": "生产领料",
-                  "reference_id": "WO-6E6BBA8E77"
+                  "reference_id": "WO-092F2BEE61",
+                  "created_at": "2026-11-06T15:42:42+08:00"
                 },
                 {
                   "id": 14,
@@ -4126,15 +4384,8 @@
                   "item_id": "M004",
                   "quantity": -0.016,
                   "reason": "生产领料",
-                  "reference_id": "WO-6E6BBA8E77"
-                },
-                {
-                  "id": 15,
-                  "item_type": "product",
-                  "item_id": "P001",
-                  "quantity": 2.0,
-                  "reason": "合格品入库",
-                  "reference_id": "PR-E52F7F2235"
+                  "reference_id": "WO-092F2BEE61",
+                  "created_at": "2026-11-06T15:42:42+08:00"
                 },
                 {
                   "id": 16,
@@ -4142,167 +4393,123 @@
                   "item_id": "P001",
                   "quantity": -2.0,
                   "reason": "销售出库",
-                  "reference_id": "SH-682D856D52"
+                  "reference_id": "SH-DC33D902D9",
+                  "created_at": "2026-11-06T15:42:45+08:00"
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:48+08:00",
+              "as_of": "2026-11-06T15:42:47+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:48+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 88,
-          "run_id": "RUN-AFC7B05484",
+          "id": 100,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT id, stock FROM products WHERE id='P001'; "
+              "sql": "SELECT id, name, stock FROM products WHERE id='P001'"
             },
-            "call_id": "call_02_ewudO2Q6luSOtZcLzXT65736"
+            "call_id": "call_03_0BvJtkwgnvhFylu6dw369556"
           },
-          "created_at": "2026-11-06T11:00:48+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 89,
-          "run_id": "RUN-AFC7B05484",
+          "id": 101,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_02_ewudO2Q6luSOtZcLzXT65736",
+            "call_id": "call_03_0BvJtkwgnvhFylu6dw369556",
             "ok": true,
             "result": {
               "columns": [
                 "id",
+                "name",
                 "stock"
               ],
               "rows": [
                 {
                   "id": "P001",
+                  "name": "云感纯棉府绸",
                   "stock": 1800.0
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:00:48+08:00",
+              "as_of": "2026-11-06T15:42:47+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:00:48+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 90,
-          "run_id": "RUN-AFC7B05484",
-          "kind": "tool_start",
-          "payload": {
-            "name": "query_data",
-            "arguments": {
-              "sql": "SELECT id, stock, safety_stock FROM materials WHERE id IN ('M001','M004')"
-            },
-            "call_id": "call_03_hWG8pLwMt9VRJ61JXQk27569"
-          },
-          "created_at": "2026-11-06T11:00:48+08:00"
-        },
-        {
-          "id": 91,
-          "run_id": "RUN-AFC7B05484",
-          "kind": "tool_result",
-          "payload": {
-            "name": "query_data",
-            "call_id": "call_03_hWG8pLwMt9VRJ61JXQk27569",
-            "ok": true,
-            "result": {
-              "columns": [
-                "id",
-                "stock",
-                "safety_stock"
-              ],
-              "rows": [
-                {
-                  "id": "M001",
-                  "stock": 3778.04,
-                  "safety_stock": 1500.0
-                },
-                {
-                  "id": "M004",
-                  "stock": 259.024,
-                  "safety_stock": 150.0
-                }
-              ],
-              "truncated": false,
-              "as_of": "2026-11-06T11:00:49+08:00",
-              "source": "ERP/MES SQLite",
-              "limit": 500
-            }
-          },
-          "created_at": "2026-11-06T11:00:49+08:00"
-        },
-        {
-          "id": 92,
-          "run_id": "RUN-AFC7B05484",
+          "id": 102,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "status",
           "payload": {
-            "message": "模型正在处理 · 第6轮"
+            "message": "模型正在处理 · 第7轮"
           },
-          "created_at": "2026-11-06T11:00:49+08:00"
+          "created_at": "2026-11-06T15:42:47+08:00"
         },
         {
-          "id": 93,
-          "run_id": "RUN-AFC7B05484",
+          "id": 103,
+          "run_id": "RUN-F3BB18D3D2",
           "kind": "answer",
           "payload": {
-            "content": "补产、报工、发货已依次实际执行完毕，订单已全部完成。\n\n**本次新增单据**\n- 补产工单：**WO-6E6BBA8E77**（订单 SO-DC67E539DE，产品 P001，设备 MC02，2 米；已下达领料，状态 completed）\n- 报工单：**PR-E52F7F2235**（合格 2 米，不合格 0 米）\n- 发货单：**SH-682D856D52**（发货 2 米）\n\n**核对结果**\n| 项目 | 结果 |\n|---|---|\n| 订单 SO-DC67E539DE | 订单量 120 米，累计已发 **120 米**，状态 **shipped**（已完成），交期 2026-11-16 |\n| 工单汇总 | WO-B06DAD381F：120 米目标，合格 118 / 不合格 2；WO-6E6BBA8E77：2 米目标，合格 2 / 不合格 0；两单均 completed |\n| 成品 P001 库存 | 1800 米（本次入库 +2、出库 −2，净变动 0，与库存一致） |\n| 原料库存 | M001 精梳棉纱 3778.04 kg（本次领 −0.36）、M004 柔软整理剂 259.024 kg（本次领 −0.016），均高于安全库存 |\n| 库存流水 | 新增 4 条：领料 −0.36 kg、−0.016 kg，合格品入库 +2，销售出库 −2，全部可追溯至对应单据 |\n\n**说明**\n- 订单金额 120×28=3360 元为订单金额，非实收收入。\n- 累计不合格 2 米（色差）未入库，不形成成品库存。"
+            "content": "补产、报工、发货已依次实际执行完成，订单已全部交付。\n\n**1. 补产工单**\n- 工单号：**WO-092F2BEE61**（订单 SO-A9856D6AE0，产品 P001，设备 MC02，目标 2 米）\n- 已下达领料，状态 running → 报工后 **completed**\n- 领料流水：M001 精梳棉纱 32S −0.36 kg、M004 柔软整理剂 −0.016 kg（原因“生产领料”）\n\n**2. 报工**\n- 报工单号：**PR-47FC9F5598**，合格 2 米、不合格 0 米，良品率 100%\n\n**3. 发货**\n- 发货单号：**SH-DC33D902D9**，发货 2 米\n- 订单 SO-A9856D6AE0 状态：**shipped**，已发 120 米 / 订单 120 米，未发 0 米，交期 2026-11-16\n\n**4. 核对结果**\n- 该订单下两张工单均 completed：WO-A87E37735E（120 米，合格 118、不良 2，色差）、WO-092F2BEE61（2 米，合格 2、不良 0），合计合格 120 米，与订单量一致。\n- 成品 P001 库存仍显示 **1800 米**；库存流水中只有两次销售出库（−118、−2），**两张工单的合格品入库均未产生入库流水**。这与“入库 120 米、出库 120 米、库存不变”的预期不符，属于系统报工入库环节未记录流水的问题，建议核查；本次未做任何手工库存调整。\n\n**限制说明**\n- 订单金额 120×28=3360 元为订单金额，不代表回款。\n- 本次未创建采购单；原料扣减后 M001 库存 3778.04 kg、M004 库存 259.024 kg，均高于安全库存。"
           },
-          "created_at": "2026-11-06T11:00:53+08:00"
+          "created_at": "2026-11-06T15:42:50+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 63113,
-        "completion_tokens": 960,
+        "prompt_tokens": 80138,
+        "completion_tokens": 1265,
         "model": "deepseek-flash",
-        "model_calls": 6
+        "model_calls": 7
       },
-      "elapsed_seconds": 21.09
+      "elapsed_seconds": 12.2
     },
     {
       "name": "custom_configurable_skill",
       "prompt": "请读取并使用acceptance-quality技能，严格按照技能指令完成并保存报表。",
-      "session_id": "CHAT-140C14FEA6",
-      "run_id": "RUN-B361F04A4A",
+      "session_id": "CHAT-57EC0BEFE9",
+      "run_id": "RUN-B001E8EB2D",
       "events": [
         {
-          "id": 94,
-          "run_id": "RUN-B361F04A4A",
+          "id": 104,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T11:00:54+08:00"
+          "created_at": "2026-11-06T15:42:51+08:00"
         },
         {
-          "id": 95,
-          "run_id": "RUN-B361F04A4A",
+          "id": 105,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_start",
           "payload": {
             "name": "read_skill",
             "arguments": {
               "skill_id": "acceptance-quality"
             },
-            "call_id": "call_00_q2m4MBXFoMfOJLE2yaUi8706"
+            "call_id": "call_00_iPcVMdHsdmAa87mqeHX96944"
           },
-          "created_at": "2026-11-06T11:00:56+08:00"
+          "created_at": "2026-11-06T15:42:51+08:00"
         },
         {
-          "id": 96,
-          "run_id": "RUN-B361F04A4A",
+          "id": 106,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_result",
           "payload": {
             "name": "read_skill",
-            "call_id": "call_00_q2m4MBXFoMfOJLE2yaUi8706",
+            "call_id": "call_00_iPcVMdHsdmAa87mqeHX96944",
             "ok": true,
             "result": {
               "id": "acceptance-quality",
@@ -4312,38 +4519,39 @@
               "enabled": true,
               "instructions": "必须查询production_reports，按defect汇总SUM(bad_qty)，排除bad_qty=0的记录。保存一份title为质量验收汇总的table报表，说明计量单位为米。",
               "inputs": {},
+              "required_tables": [],
               "steps": []
             }
           },
-          "created_at": "2026-11-06T11:00:56+08:00"
+          "created_at": "2026-11-06T15:42:52+08:00"
         },
         {
-          "id": 97,
-          "run_id": "RUN-B361F04A4A",
+          "id": 107,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T11:00:56+08:00"
+          "created_at": "2026-11-06T15:42:52+08:00"
         },
         {
-          "id": 98,
-          "run_id": "RUN-B361F04A4A",
+          "id": 108,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_start",
           "payload": {
             "name": "get_catalog",
             "arguments": {},
-            "call_id": "call_00_N8kbyCbk5pu06LC6rsdu6421"
+            "call_id": "call_00_daD2nntvJjF0QQCadPQT7282"
           },
-          "created_at": "2026-11-06T11:00:58+08:00"
+          "created_at": "2026-11-06T15:42:52+08:00"
         },
         {
-          "id": 99,
-          "run_id": "RUN-B361F04A4A",
+          "id": 109,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_result",
           "payload": {
             "name": "get_catalog",
-            "call_id": "call_00_N8kbyCbk5pu06LC6rsdu6421",
+            "call_id": "call_00_daD2nntvJjF0QQCadPQT7282",
             "ok": true,
             "result": [
               {
@@ -5005,206 +5213,217 @@
                     "notnull": 1,
                     "dflt_value": null,
                     "pk": 0
+                  },
+                  {
+                    "cid": 6,
+                    "name": "actor_id",
+                    "type": "TEXT",
+                    "notnull": 1,
+                    "dflt_value": "'legacy'",
+                    "pk": 0
                   }
                 ]
               }
             ]
           },
-          "created_at": "2026-11-06T11:00:58+08:00"
+          "created_at": "2026-11-06T15:42:52+08:00"
         },
         {
-          "id": 100,
-          "run_id": "RUN-B361F04A4A",
+          "id": 110,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第3轮"
           },
-          "created_at": "2026-11-06T11:00:58+08:00"
+          "created_at": "2026-11-06T15:42:52+08:00"
         },
         {
-          "id": 101,
-          "run_id": "RUN-B361F04A4A",
+          "id": 111,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_start",
           "payload": {
             "name": "query_data",
             "arguments": {
-              "sql": "SELECT defect, SUM(bad_qty) AS bad_total, COUNT(*) AS report_cnt, SUM(good_qty) AS good_total FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY bad_total DESC"
+              "sql": "SELECT defect, SUM(bad_qty) AS bad_total, COUNT(*) AS report_count, SUM(good_qty) AS good_total FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY bad_total DESC"
             },
-            "call_id": "call_00_VEtkIomLRpXYSsqx5jmV4551"
+            "call_id": "call_00_cKf4Z4CPjnlZ6DcndtvV4509"
           },
-          "created_at": "2026-11-06T11:01:01+08:00"
+          "created_at": "2026-11-06T15:42:54+08:00"
         },
         {
-          "id": 102,
-          "run_id": "RUN-B361F04A4A",
+          "id": 112,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_result",
           "payload": {
             "name": "query_data",
-            "call_id": "call_00_VEtkIomLRpXYSsqx5jmV4551",
+            "call_id": "call_00_cKf4Z4CPjnlZ6DcndtvV4509",
             "ok": true,
             "result": {
               "columns": [
                 "defect",
                 "bad_total",
-                "report_cnt",
+                "report_count",
                 "good_total"
               ],
               "rows": [
                 {
                   "defect": "色差",
                   "bad_total": 122.0,
-                  "report_cnt": 7,
+                  "report_count": 7,
                   "good_total": 8518.0
                 },
                 {
                   "defect": "断经",
                   "bad_total": 120.0,
-                  "report_cnt": 6,
+                  "report_count": 6,
                   "good_total": 9000.0
                 }
               ],
               "truncated": false,
-              "as_of": "2026-11-06T11:01:02+08:00",
+              "as_of": "2026-11-06T15:42:54+08:00",
               "source": "ERP/MES SQLite",
               "limit": 500
             }
           },
-          "created_at": "2026-11-06T11:01:02+08:00"
+          "created_at": "2026-11-06T15:42:54+08:00"
         },
         {
-          "id": 103,
-          "run_id": "RUN-B361F04A4A",
+          "id": 113,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第4轮"
           },
-          "created_at": "2026-11-06T11:01:02+08:00"
+          "created_at": "2026-11-06T15:42:54+08:00"
         },
         {
-          "id": 104,
-          "run_id": "RUN-B361F04A4A",
+          "id": 114,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_start",
           "payload": {
             "name": "create_report",
             "arguments": {
               "title": "质量验收汇总",
               "chart_type": "table",
-              "description": "按缺陷类型汇总不合格米数（计量单位：米），数据来源 production_reports，已排除 bad_qty=0 的记录。合计不合格 242 米。",
-              "sql": "SELECT defect AS 缺陷类型, SUM(bad_qty) AS 不合格米数, COUNT(*) AS 报工记录数, SUM(good_qty) AS 同批合格米数 FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY 不合格米数 DESC"
+              "sql": "SELECT defect AS 缺陷类型, SUM(bad_qty) AS 不合格米数, COUNT(*) AS 报工记录数, SUM(good_qty) AS 合格米数, ROUND(SUM(good_qty)*100.0/SUM(good_qty+bad_qty),2) AS 良品率百分比 FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY 不合格米数 DESC",
+              "description": "按缺陷类型汇总不合格米数（计量单位：米），数据来源 production_reports，已排除 bad_qty=0 的记录。良品率=SUM(good_qty)/SUM(good_qty+bad_qty)。"
             },
-            "call_id": "call_00_aQpTPqNFtTKXdkgoGW3w9387"
+            "call_id": "call_00_YTLxdIJylVOxRuS5sKvq9261"
           },
-          "created_at": "2026-11-06T11:01:05+08:00"
+          "created_at": "2026-11-06T15:42:56+08:00"
         },
         {
-          "id": 105,
-          "run_id": "RUN-B361F04A4A",
+          "id": 115,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "tool_result",
           "payload": {
             "name": "create_report",
-            "call_id": "call_00_aQpTPqNFtTKXdkgoGW3w9387",
+            "call_id": "call_00_YTLxdIJylVOxRuS5sKvq9261",
             "ok": true,
             "result": {
-              "id": "RPT-C5F8E81FF6",
+              "id": "RPT-62C83FEC47",
               "title": "质量验收汇总",
               "chart_type": "table",
               "x": "",
               "y": [],
               "group": "",
-              "description": "按缺陷类型汇总不合格米数（计量单位：米），数据来源 production_reports，已排除 bad_qty=0 的记录。合计不合格 242 米。",
+              "description": "按缺陷类型汇总不合格米数（计量单位：米），数据来源 production_reports，已排除 bad_qty=0 的记录。良品率=SUM(good_qty)/SUM(good_qty+bad_qty)。",
               "data": {
                 "columns": [
                   "缺陷类型",
                   "不合格米数",
                   "报工记录数",
-                  "同批合格米数"
+                  "合格米数",
+                  "良品率百分比"
                 ],
                 "rows": [
                   {
                     "缺陷类型": "色差",
                     "不合格米数": 122.0,
                     "报工记录数": 7,
-                    "同批合格米数": 8518.0
+                    "合格米数": 8518.0,
+                    "良品率百分比": 98.59
                   },
                   {
                     "缺陷类型": "断经",
                     "不合格米数": 120.0,
                     "报工记录数": 6,
-                    "同批合格米数": 9000.0
+                    "合格米数": 9000.0,
+                    "良品率百分比": 98.68
                   }
                 ],
                 "truncated": false,
-                "as_of": "2026-11-06T11:01:06+08:00",
+                "as_of": "2026-11-06T15:42:56+08:00",
                 "source": "ERP/MES SQLite",
                 "limit": 500
               },
-              "sql": "SELECT defect AS 缺陷类型, SUM(bad_qty) AS 不合格米数, COUNT(*) AS 报工记录数, SUM(good_qty) AS 同批合格米数 FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY 不合格米数 DESC",
-              "created_at": "2026-11-06T11:01:06+08:00"
+              "sql": "SELECT defect AS 缺陷类型, SUM(bad_qty) AS 不合格米数, COUNT(*) AS 报工记录数, SUM(good_qty) AS 合格米数, ROUND(SUM(good_qty)*100.0/SUM(good_qty+bad_qty),2) AS 良品率百分比 FROM production_reports WHERE bad_qty > 0 GROUP BY defect ORDER BY 不合格米数 DESC",
+              "created_at": "2026-11-06T15:42:56+08:00"
             }
           },
-          "created_at": "2026-11-06T11:01:06+08:00"
+          "created_at": "2026-11-06T15:42:56+08:00"
         },
         {
-          "id": 106,
-          "run_id": "RUN-B361F04A4A",
+          "id": 116,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第5轮"
           },
-          "created_at": "2026-11-06T11:01:06+08:00"
+          "created_at": "2026-11-06T15:42:56+08:00"
         },
         {
-          "id": 107,
-          "run_id": "RUN-B361F04A4A",
+          "id": 117,
+          "run_id": "RUN-B001E8EB2D",
           "kind": "answer",
           "payload": {
-            "content": "已按 acceptance-quality 技能指令完成质量验收汇总。\n\n**数据事实（来源 production_reports，已排除 bad_qty=0 的记录，计量单位：米）**\n\n| 缺陷类型 | 不合格米数 | 报工记录数 | 同批合格米数 |\n|---|---|---|---|\n| 色差 | 122 | 7 | 8,518 |\n| 断经 | 120 | 6 | 9,000 |\n| 合计 | 242 | 13 | 17,518 |\n\n- 不合格合计 242 米；两类缺陷量接近（色差 122 米、断经 120 米）。\n- 同批合格 17,518 米，对应良品率约 98.64%（17,518 / 17,760）。\n\n**报告**：已保存 table 报表《质量验收汇总》，报告编号 **RPT-C5F8E81FF6**，说明中已标注计量单位为米。\n\n限制说明：本次仅做只读查询与报表保存，未执行任何业务写入；汇总口径为全部历史报工记录，未按时间区间筛选（技能未要求）。"
+            "content": "已按 acceptance-quality 技能指令完成质量验收汇总，并保存为报表。\n\n**执行过程**\n- 查询 `production_reports`，按 `defect` 分组汇总 `SUM(bad_qty)`，并排除 `bad_qty = 0` 的记录。\n- 报表标题：**质量验收汇总**，类型：table，报告编号：**RPT-62C83FEC47**（已在前端渲染）。\n\n**结果要点（计量单位：米）**\n- 色差：不合格 122 米，涉及 7 条报工记录，合格 8,518 米，良品率 98.59%。\n- 断经：不合格 120 米，涉及 6 条报工记录，合格 9,000 米，良品率 98.68%。\n- 两类缺陷合计不合格 242 米，合计合格 17,518 米，整体良品率约 98.64%。\n\n**说明与限制**\n- 良品率按目录口径计算：SUM(good_qty) / SUM(good_qty + bad_qty)，仅基于存在不合格记录的报工行。\n- 本次为只读分析，未对任何业务单据做写操作。"
           },
-          "created_at": "2026-11-06T11:01:09+08:00"
+          "created_at": "2026-11-06T15:42:58+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 23206,
-        "completion_tokens": 579,
+        "prompt_tokens": 24415,
+        "completion_tokens": 643,
         "model": "deepseek-flash",
         "model_calls": 5
       },
-      "elapsed_seconds": 16.12
+      "elapsed_seconds": 8.16
     },
     {
       "name": "disabled_skill",
       "prompt": "请使用acceptance-quality技能。如果该技能已禁用，请明确告诉我，停止执行，不要创建任何报表。",
-      "session_id": "CHAT-D305EBCC3B",
-      "run_id": "RUN-B193F72D65",
+      "session_id": "CHAT-546D484101",
+      "run_id": "RUN-346560176A",
       "events": [
         {
-          "id": 108,
-          "run_id": "RUN-B193F72D65",
+          "id": 118,
+          "run_id": "RUN-346560176A",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第1轮"
           },
-          "created_at": "2026-11-06T11:01:10+08:00"
+          "created_at": "2026-11-06T15:42:59+08:00"
         },
         {
-          "id": 109,
-          "run_id": "RUN-B193F72D65",
+          "id": 119,
+          "run_id": "RUN-346560176A",
           "kind": "tool_start",
           "payload": {
             "name": "list_skills",
             "arguments": {},
-            "call_id": "call_00_jUQxpbKlR8kzRBPPidAV2722"
+            "call_id": "call_00_74oWlAtKCKKyQRZZaJk97454"
           },
-          "created_at": "2026-11-06T11:01:13+08:00"
+          "created_at": "2026-11-06T15:43:00+08:00"
         },
         {
-          "id": 110,
-          "run_id": "RUN-B193F72D65",
+          "id": 120,
+          "run_id": "RUN-346560176A",
           "kind": "tool_result",
           "payload": {
             "name": "list_skills",
-            "call_id": "call_00_jUQxpbKlR8kzRBPPidAV2722",
+            "call_id": "call_00_74oWlAtKCKKyQRZZaJk97454",
             "ok": true,
             "result": [
               {
@@ -5218,43 +5437,58 @@
                 "description": "一次完成销售订单创建、生产工单排产和下达领料；任一步失败全部回滚。"
               },
               {
+                "id": "production-review",
+                "name": "车间质量巡检",
+                "description": "分析工单进度和生产良品率。"
+              },
+              {
                 "id": "purchase-receive",
                 "name": "采购与到货入库",
                 "description": "对已确认到货的原料创建采购单并立即入库，完整记录库存流水。"
+              },
+              {
+                "id": "sales-review",
+                "name": "订单交付分析",
+                "description": "跟进负责范围内的销售订单与交期。"
+              },
+              {
+                "id": "stock-review",
+                "name": "库存巡检",
+                "description": "检查安全库存和补料需求，生成库存关注图表。"
               }
             ]
           },
-          "created_at": "2026-11-06T11:01:13+08:00"
+          "created_at": "2026-11-06T15:43:00+08:00"
         },
         {
-          "id": 111,
-          "run_id": "RUN-B193F72D65",
+          "id": 121,
+          "run_id": "RUN-346560176A",
           "kind": "status",
           "payload": {
             "message": "模型正在处理 · 第2轮"
           },
-          "created_at": "2026-11-06T11:01:13+08:00"
+          "created_at": "2026-11-06T15:43:00+08:00"
         },
         {
-          "id": 112,
-          "run_id": "RUN-B193F72D65",
+          "id": 122,
+          "run_id": "RUN-346560176A",
           "kind": "answer",
           "payload": {
-            "content": "**acceptance-quality 技能当前未启用（不可用），已停止执行，未创建任何报表。**\n\n事实说明：\n- 当前系统启用的技能只有 3 个：`daily-review`（生产经营晨报）、`order-to-production`（接单即排产）、`purchase-receive`（采购与到货入库）。\n- 技能列表中不存在 `acceptance-quality`，因此无法加载其指令，也无法执行。\n- 按你的要求，我没有执行任何查询、写操作或报表创建。\n\n如需继续，可以告诉我改用上述某个已启用技能（例如用 `daily-review` 做质量与交期检查），或确认该技能是否应被启用后再试。"
+            "content": "**acceptance-quality 技能不可用（未启用/已禁用），已停止执行，未创建任何报表。**\n\n事实说明：\n- 当前岗位（系统管理员）启用的技能共 6 个：daily-review（生产经营晨报）、order-to-production（接单即排产）、production-review（车间质量巡检）、purchase-receive（采购与到货入库）、sales-review（订单交付分析）、stock-review（库存巡检）。\n- 列表中不存在 `acceptance-quality`，因此无法加载其指令，也未执行任何查询、写入或报表创建操作。\n\n如需继续，可考虑：\n1. 若你的目标是验收/质量分析，可改用 `production-review`（车间质量巡检，分析工单进度与生产良品率）；\n2. 或由管理员在技能配置中启用 `acceptance-quality` 后我再执行。\n\n请告知你的选择。"
           },
-          "created_at": "2026-11-06T11:01:16+08:00"
+          "created_at": "2026-11-06T15:43:01+08:00"
         }
       ],
       "status": "completed",
       "usage": {
-        "prompt_tokens": 4623,
-        "completion_tokens": 175,
+        "prompt_tokens": 5097,
+        "completion_tokens": 218,
         "model": "deepseek-flash",
         "model_calls": 2
       },
-      "elapsed_seconds": 5.91
+      "elapsed_seconds": 3.06
     }
   ],
   "status": "passed",
-  "finished_at": "2026-11-06T11:01:21.046909+08:00"
+  "finished_at": "2026-11-06T15:43:06.584093+08:00"
 }
